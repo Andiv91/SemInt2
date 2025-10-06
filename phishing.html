@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Phishing — CSECV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page-phishing">
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand" aria-label="CSECV Home">
+          <span class="brand-dot" aria-hidden="true"></span>
+          CSECV
+        </a>
+        <nav class="main-nav" aria-label="Principal">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/modulos">Módulos</a></li>
+            <li><a href="#sobre">Sobre Nosotros</a></li>
+            <li><a href="#contacto">Contacto</a></li>
+          </ul>
+        </nav>
+        <div class="nav-actions">
+          <button class="btn btn-text" id="btn-login" aria-label="Iniciar sesión">Iniciar Sesión</button>
+          <button class="btn btn-ghost" id="btn-logout" style="display:none" aria-label="Cerrar sesión">Salir</button>
+          <a class="btn btn-primary" id="btn-cta" href="#cta">Incluir Empresa</a>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">☰</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="container">
+        <nav class="tabs" aria-label="Categorías">
+          <a class="tab active" href="/phishing">Phishing</a>
+          <a class="tab" href="#">Seguridad</a>
+          <a class="tab" href="#">IoT</a>
+          <a class="tab" href="#">Datos</a>
+        </nav>
+
+        <section class="phishing-hero">
+          <figure class="media">
+            <img src="https://images.unsplash.com/photo-1600267175165-3b47de7f9c54?q=80&w=1600&auto=format&fit=crop" alt="Ilustración phishing" />
+          </figure>
+          <div class="copy">
+            <h1>
+              Este es tu video<br/>número 3 sobre<br/>phishing, ¡aprendamos<br/>juntos!
+            </h1>
+            <p class="lead">En esta aula vamos a aprender los riesgos de entrar a links de personas desconocidas, incluso si piensas que son de confianza. ¡revisa siempre!.</p>
+            <p><a class="next-link" href="/ava">Siguiente aula →</a></p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="app.js"></script>
+  </body>
+  </html>
+
+

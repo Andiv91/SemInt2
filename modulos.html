@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Módulos — CSECV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page-modulos">
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand" aria-label="CSECV Home">
+          <span class="brand-dot" aria-hidden="true"></span>
+          CSECV
+        </a>
+        <nav class="main-nav" aria-label="Principal">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a class="active" href="/modulos">Módulos</a></li>
+            <li><a href="#sobre">Sobre Nosotros</a></li>
+            <li><a href="#contacto">Contacto</a></li>
+          </ul>
+        </nav>
+        <div class="nav-actions">
+          <button class="btn btn-text" id="btn-login" aria-label="Iniciar sesión">Iniciar Sesión</button>
+          <button class="btn btn-ghost" id="btn-logout" style="display:none" aria-label="Cerrar sesión">Salir</button>
+          <a class="btn btn-primary" id="btn-cta" href="#cta">Incluir Empresa</a>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">☰</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="modules-header">
+        <h1>Bienvenido de vuelta</h1>
+        <p class="lead center">¿Qué módulo quieres fortalecer hoy?</p>
+      </section>
+
+      <section class="modules-grid">
+        <a class="module-card" href="#">
+          <div class="module-icon">💾</div>
+          <h3>Seguridad física</h3>
+          <p>Aprende a proteger tus activos y espacios con las mejores prácticas.</p>
+        </a>
+        <a class="module-card" href="#">
+          <div class="module-icon">📡</div>
+          <h3>Servicios externos</h3>
+          <p>Protege tus servicios de terceros y reduce riesgos operativos.</p>
+        </a>
+        <a class="module-card" href="#">
+          <div class="module-icon">🔗</div>
+          <h3>Links y Archivos</h3>
+          <p>Organiza y accede a la información de forma eficiente y segura.</p>
+        </a>
+        <a class="module-card" href="#">
+          <div class="module-icon">🖥️</div>
+          <h3>Servidores</h3>
+          <p>Comprende y administra servidores con buenas prácticas.</p>
+        </a>
+        <a class="module-card" href="#">
+          <div class="module-icon">⚙️</div>
+          <h3>General</h3>
+          <p>Fundamentos esenciales para navegar y operar de forma segura.</p>
+        </a>
+        <a class="module-card" href="/phishing">
+          <div class="module-icon">🛡️</div>
+          <h3>Phishing</h3>
+          <p>Identifica y defiende tu información ante ataques de phishing.</p>
+        </a>
+      </section>
+    </main>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="app.js"></script>
+  </body>
+  </html>
+
+

@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <script>
+      window.__CONFIG__ = { googleClientId: null };
+    </script>
     <header class="site-header">
       <div class="container nav">
         <a href="#" class="brand" aria-label="CSECV Home">
@@ -20,6 +23,7 @@
         <nav class="main-nav" aria-label="Principal">
           <ul>
             <li><a class="active" href="#home">Home</a></li>
+            <li><a href="/modulos">Módulos</a></li>
             <li><a href="#precios">Precios</a></li>
             <li><a href="#sobre">Sobre Nosotros</a></li>
             <li><a href="#contacto">Contacto</a></li>
@@ -27,7 +31,8 @@
         </nav>
         <div class="nav-actions">
           <button class="btn btn-text" id="btn-login" aria-label="Iniciar sesión con Google">Iniciar Sesión</button>
-          <a class="btn btn-primary" href="#cta">Incluir Empresa</a>
+          <button class="btn btn-ghost" id="btn-logout" style="display:none" aria-label="Cerrar sesión">Salir</button>
+          <a class="btn btn-primary" id="btn-cta" href="#cta">Incluir Empresa</a>
         </div>
         <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">☰</button>
       </div>
@@ -129,7 +134,7 @@
               <p>
                 Con CSECV, tu personal estará a la vanguardia de la tecnología, y jamás habrá otro databrech en tu empresa.
               </p>
-              <a class="btn btn-primary" href="#">Incluir Empresa</a>
+              <a class="btn btn-primary" id="cta-start" href="#">Incluir Empresa</a>
             </div>
             <div class="cta-art">
               <img src="https://images.unsplash.com/illustration/friends.png?auto=format&fit=crop&w=800&q=80" alt="Ilustración personas interactuando" onerror="this.src='https://dummyimage.com/600x400/6b44d6/ffffff&text=Ilustraci%C3%B3n'" />
@@ -137,6 +142,31 @@
           </div>
         </div>
       </section>
+
+      <!-- Protected form modal -->
+      <div class="modal" id="modal-company" aria-hidden="true" style="display:none">
+        <div class="modal-backdrop" data-close></div>
+        <div class="modal-dialog">
+          <button class="modal-close" data-close aria-label="Cerrar">✕</button>
+          <h3>Incluir Empresa</h3>
+          <form id="companyForm">
+            <label>
+              Nombre de la empresa
+              <input type="text" name="companyName" required />
+            </label>
+            <label>
+              Nombre de contacto
+              <input type="text" name="contactName" />
+            </label>
+            <label>
+              Teléfono
+              <input type="tel" name="phone" />
+            </label>
+            <button class="btn btn-primary" type="submit">Enviar</button>
+          </form>
+          <p class="form-note">Acceso restringido a correos @ufps.edu.co</p>
+        </div>
+      </div>
     </main>
 
     <footer class="site-footer">
@@ -145,6 +175,7 @@
       </div>
     </footer>
 
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="app.js"></script>
   </body>
   </html>

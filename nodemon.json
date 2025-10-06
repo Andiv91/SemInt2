@@ -1,0 +1,7 @@
+{
+  "watch": ["server.js"],
+  "ext": "js,json",
+  "ignore": ["*.html", "*.css", "app.js", "package-lock.json"]
+}
+
+

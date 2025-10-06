@@ -85,11 +85,51 @@ body{
 /* Footer */
 .site-footer{border-top:1px solid rgba(255,255,255,.08); padding:24px 0; color:var(--muted)}
 
+/* Modal */
+.modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.6)}
+.modal-dialog{position:fixed; inset:50% auto auto 50%; transform:translate(-50%,-50%); background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:22px; width:min(520px, 92%); box-shadow:0 30px 60px rgba(0,0,0,.5)}
+.modal-dialog h3{margin:0 0 12px}
+.modal-dialog form{display:grid; gap:14px}
+.modal-dialog label{display:grid; gap:6px; font-weight:600}
+.modal-dialog input{background:#120f1b; color:var(--text); border:1px solid rgba(255,255,255,.08); padding:12px 12px; border-radius:10px}
+.modal-close{position:absolute; top:10px; right:10px; background:transparent; color:#fff; border:0; font-size:18px; cursor:pointer}
+.form-note{color:var(--muted); font-size:13px; margin-top:8px}
+
+/* Pages: Modulos */
+.modules-header{padding:40px 0 10px}
+.modules-header h1{text-align:center; font-size:48px; margin:0}
+.modules-header .center{text-align:center}
+.modules-grid{display:grid; grid-template-columns: repeat(3, 1fr); gap:28px; padding:20px 0 60px}
+.module-card{background:#1c1a22; color:#fff; text-decoration:none; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:26px; display:grid; gap:10px; justify-items:center; text-align:center; box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.module-card:hover{border-color:rgba(124,77,255,.6)}
+.module-card .module-icon{width:64px; height:64px; border-radius:16px; background:#2a2536; display:grid; place-items:center; font-size:28px; color:#b794ff}
+.module-card h3{margin:6px 0 6px}
+.module-card p{color:#c9c5d6; margin:0}
+
+/* Page: Phishing */
+.tabs{display:flex; gap:24px; padding:22px 0}
+.tab{color:#c9c5d6; text-decoration:none; font-weight:700; background:#1c1a22; padding:12px 18px; border-radius:12px}
+.tab.active{background:#efe7ff; color:#24193c}
+.phishing-hero{display:grid; grid-template-columns: 1fr 1fr; gap:36px; align-items:center; padding:20px 0 64px}
+.phishing-hero .media img{width:100%; height:420px; object-fit:cover; border-radius:18px; box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.phishing-hero .copy h1{font-size:54px; line-height:1.1; margin:0 0 12px}
+.next-link{color:#cbb5ff; font-weight:800; text-decoration:none}
+
+/* Page: AVA */
+.ava-hero{padding:30px 0 10px}
+.ava-hero h1{text-align:center; font-size:48px; margin:0}
+.ava-hero .center{text-align:center}
+.ava-player{padding:20px 0 80px}
+.player-card{background:#0c0b11; border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:16px; box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.player-card video{width:100%; height:auto; display:block; border-radius:12px}
+
 /* Responsive */
 @media (max-width: 960px){
   .hero-grid{grid-template-columns:1fr}
   .hero-media img{height:360px}
   .cta-card{grid-template-columns:1fr}
+  .modules-grid{grid-template-columns: repeat(2, 1fr)}
+  .phishing-hero{grid-template-columns:1fr}
 }
 
 @media (max-width: 720px){
@@ -97,6 +137,8 @@ body{
   .nav-toggle{display:block}
   .hero-copy h1{font-size:44px}
   .carousel-track{padding:6px 44px}
+  .modules-grid{grid-template-columns: 1fr}
+  .phishing-hero .copy h1{font-size:40px}
 }
 
 
