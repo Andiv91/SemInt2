@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CSECV — Capacita a tu personal</title>
+    <meta name="description" content="Cursos virtuales de ciberseguridad para empresas colombianas. Capacita a tu personal de la mejor manera." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a href="#" class="brand" aria-label="CSECV Home">
+          <span class="brand-dot" aria-hidden="true"></span>
+          CSECV
+        </a>
+        <nav class="main-nav" aria-label="Principal">
+          <ul>
+            <li><a class="active" href="#home">Home</a></li>
+            <li><a href="#precios">Precios</a></li>
+            <li><a href="#sobre">Sobre Nosotros</a></li>
+            <li><a href="#contacto">Contacto</a></li>
+          </ul>
+        </nav>
+        <div class="nav-actions">
+          <button class="btn btn-text" id="btn-login" aria-label="Iniciar sesión con Google">Iniciar Sesión</button>
+          <a class="btn btn-primary" href="#cta">Incluir Empresa</a>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">☰</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero -->
+      <section id="home" class="section-hero">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Ciberseguridad para tu empresa, fácil.</p>
+            <h1>
+              Capacita a tu<br/>
+              personal de la<br/>
+              mejor manera.
+            </h1>
+            <p class="lead">
+              Nuestros cursos virtuales capacitarán a tu personal sobre el mundo de la ciberseguridad, sus riesgos, sus beneficios, y todo lo demás.
+            </p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="#cta">Incluir Empresa</a>
+              <button class="btn btn-ghost" id="btn-how">
+                <span class="play" aria-hidden="true">▶</span>
+                Cómo funciona
+              </button>
+            </div>
+            <p class="trust-note">
+              La elección confiable de profesionales y equipos de empresas colombianas líderes.
+            </p>
+          </div>
+          <figure class="hero-media" aria-label="Ilustración de ciberseguridad">
+            <img src="https://images.unsplash.com/photo-1555255707-c07966088b7b?q=80&w=1600&auto=format&fit=crop" alt="Tablero electrónico con candado digital" />
+          </figure>
+        </div>
+      </section>
+
+      <!-- Testimonios -->
+      <section id="testimonios" class="section-testimonials">
+        <div class="container">
+          <h2>Ayudando a las empresas colombianas a capacitar a sus trabajadores.</h2>
+
+          <div class="carousel" aria-roledescription="carousel" aria-label="Opiniones de clientes">
+            <button class="carousel-control prev" id="prevTestimonial" aria-label="Anterior">←</button>
+            <div class="carousel-track" id="testimonialTrack">
+              <article class="testimonial-card">
+                <blockquote>
+                  “Gracias a CSECV, nuestros trabajadores se han capacitado en la importancia de la seguridad y selectividad en compartir información”.
+                </blockquote>
+                <div class="author">
+                  <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop" alt="Foto de Ricardo Roa" />
+                  <div>
+                    <strong>Ricardo Roa</strong>
+                    <span>CEO de EcoPetrol</span>
+                  </div>
+                </div>
+              </article>
+
+              <article class="testimonial-card">
+                <blockquote>
+                  “Con la ayuda de las aulas virtuales que ofrece CSECV, las estafas por phishing han disminuido considerablemente”.
+                </blockquote>
+                <div class="author">
+                  <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=400&auto=format&fit=crop" alt="Foto de Oscar Bravo" />
+                  <div>
+                    <strong>Oscar Bravo</strong>
+                    <span>CEO de Terpel</span>
+                  </div>
+                </div>
+              </article>
+
+              <article class="testimonial-card">
+                <blockquote>
+                  “He encontrado que los módulos son muy prácticos y bien diseñados; finalmente mi equipo comprende y aplica la seguridad en su trabajo diario”.
+                </blockquote>
+                <div class="author">
+                  <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=400&auto=format&fit=crop" alt="Foto de Claudia Méndez" />
+                  <div>
+                    <strong>Claudia Méndez</strong>
+                    <span>Gerente de TI</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+            <button class="carousel-control next" id="nextTestimonial" aria-label="Siguiente">→</button>
+          </div>
+
+          <div class="center">
+            <a class="btn btn-ghost light" href="#historias">Leer más historias de usuarios</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Banner CTA final -->
+      <section id="cta" class="section-cta">
+        <div class="container">
+          <div class="cta-card">
+            <div class="cta-copy">
+              <h3>¡Capacítate sobre la seguridad virtual!</h3>
+              <p>
+                Con CSECV, tu personal estará a la vanguardia de la tecnología, y jamás habrá otro databrech en tu empresa.
+              </p>
+              <a class="btn btn-primary" href="#">Incluir Empresa</a>
+            </div>
+            <div class="cta-art">
+              <img src="https://images.unsplash.com/illustration/friends.png?auto=format&fit=crop&w=800&q=80" alt="Ilustración personas interactuando" onerror="this.src='https://dummyimage.com/600x400/6b44d6/ffffff&text=Ilustraci%C3%B3n'" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>© <span id="year"></span> CSECV. Todos los derechos reservados.</p>
+      </div>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+  </html>
+
+
