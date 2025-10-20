@@ -11,9 +11,6 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <script>
-      window.__CONFIG__ = { googleClientId: null };
-    </script>
     <header class="site-header">
       <div class="container nav">
         <a href="#" class="brand" aria-label="CSECV Home">
@@ -25,13 +22,14 @@
             <li><a class="active" href="#home">Home</a></li>
             <li><a href="/modulos">Módulos</a></li>
             <li><a href="#precios">Precios</a></li>
-            <li><a href="#sobre">Sobre Nosotros</a></li>
-            <li><a href="#contacto">Contacto</a></li>
+            <li><a href="/sobre.html">Sobre Nosotros</a></li>
+            <li><a href="/contacto.html">Contacto</a></li>
           </ul>
         </nav>
         <div class="nav-actions">
-          <button class="btn btn-text" id="btn-login" aria-label="Iniciar sesión con Google">Iniciar Sesión</button>
+          <button class="btn btn-text" id="btn-login" aria-label="Iniciar sesión">Iniciar Sesión</button>
           <button class="btn btn-ghost" id="btn-logout" style="display:none" aria-label="Cerrar sesión">Salir</button>
+          <button class="btn btn-ghost" id="btn-user" style="display:none" aria-label="Perfil"></button>
           <a class="btn btn-primary" id="btn-cta" href="#cta">Incluir Empresa</a>
         </div>
         <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">☰</button>
@@ -39,6 +37,25 @@
     </header>
 
     <main>
+      <!-- Profile modal -->
+      <div class="modal" id="modal-profile" aria-hidden="true" style="display:none">
+        <div class="modal-backdrop" data-close></div>
+        <div class="modal-dialog">
+          <button class="modal-close" data-close aria-label="Cerrar">✕</button>
+          <h3>Tu perfil</h3>
+          <form id="profileForm">
+            <label>Nombre de usuario<input type="text" name="username" required /></label>
+            <div class="row"><button class="btn btn-primary" type="submit">Guardar</button></div>
+          </form>
+          <hr style="border-color:rgba(255,255,255,.08)" />
+          <form id="passwordForm">
+            <label>Contraseña actual<input type="password" name="currentPassword" required /></label>
+            <label>Nueva contraseña<input type="password" name="newPassword" required /></label>
+            <div class="row"><button class="btn btn-ghost" type="submit">Cambiar contraseña</button></div>
+          </form>
+          <p class="form-note">¿Necesitas ayuda? Escríbenos a soporte@csecv.com</p>
+        </div>
+      </div>
       <!-- Hero -->
       <section id="home" class="section-hero">
         <div class="container hero-grid">
@@ -175,7 +192,6 @@
       </div>
     </footer>
 
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="app.js"></script>
   </body>
   </html>

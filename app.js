@@ -25,31 +25,33 @@
   if (prev) prev.addEventListener('click', () => scrollByCard(-1));
   if (next) next.addEventListener('click', () => scrollByCard(1));
 
-  // Google Identity + protected flow
-  let configLoaded = false;
-  let googleClientId = null;
+  // Local auth + protected flow
   const btnLogin = document.getElementById('btn-login');
   const btnLogout = document.getElementById('btn-logout');
+  const btnUser = document.getElementById('btn-user');
   const ctaStart = document.getElementById('cta-start');
   const ctaNav = document.getElementById('btn-cta');
   const modal = document.getElementById('modal-company');
+  const modalProfile = document.getElementById('modal-profile');
   const form = document.getElementById('companyForm');
+  const profileForm = document.getElementById('profileForm');
+  const passwordForm = document.getElementById('passwordForm');
 
   function openModal(){ if (modal){ modal.style.display='block'; modal.setAttribute('aria-hidden','false'); } }
   function closeModal(){ if (modal){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); } }
+  function openProfile(){ if (modalProfile){ modalProfile.style.display='block'; modalProfile.setAttribute('aria-hidden','false'); seedProfile(); } }
+  function closeProfile(){ if (modalProfile){ modalProfile.style.display='none'; modalProfile.setAttribute('aria-hidden','true'); } }
   document.querySelectorAll('[data-close]').forEach(el=> el.addEventListener('click', closeModal));
-
-  async function loadConfig(){
-    if (configLoaded) return;
-    try {
-      const res = await fetch('/config');
-      const data = await res.json();
-      window.__CONFIG__ = data;
-      googleClientId = data.googleClientId;
-      configLoaded = true;
-    } catch (e) {
-      console.error('Config load failed', e);
-    }
+  document.querySelectorAll('[data-close]').forEach(el=> el.addEventListener('click', closeProfile));
+  async function seedProfile(){
+    try{
+      const r = await fetch('/api/me');
+      const d = await r.json();
+      if (d.authenticated && profileForm){
+        const input = profileForm.querySelector('input[name="username"]');
+        if (input) input.value = d.username || '';
+      }
+    }catch{}
   }
 
   async function checkSessionUI(){
@@ -59,70 +61,32 @@
       if (d.authenticated){
         if (btnLogin) btnLogin.style.display='none';
         if (btnLogout) btnLogout.style.display='inline-flex';
+        const cta = document.getElementById('btn-cta');
+        if (cta) cta.style.display='none';
+        const ctaStartBtn = document.getElementById('cta-start');
+        if (ctaStartBtn) ctaStartBtn.style.display='none';
+        if (btnUser){ btnUser.style.display='inline-flex'; btnUser.textContent = d.username || d.email; }
       } else {
         if (btnLogin) btnLogin.style.display='inline-flex';
         if (btnLogout) btnLogout.style.display='none';
+        const cta = document.getElementById('btn-cta');
+        if (cta) cta.style.display='inline-flex';
+        const ctaStartBtn = document.getElementById('cta-start');
+        if (ctaStartBtn) ctaStartBtn.style.display='inline-flex';
+        if (btnUser){ btnUser.style.display='none'; btnUser.textContent=''; }
       }
     }catch{}
   }
 
-  async function ensureConfigAndGis(){
-    await loadConfig();
-    // wait for GIS script
-    if (!window.google || !window.google.accounts || !window.google.accounts.id){
-      await new Promise(resolve => {
-        const id = setInterval(()=>{
-          if (window.google && window.google.accounts && window.google.accounts.id){
-            clearInterval(id); resolve();
-          }
-        }, 50);
-      });
-    }
-  }
+  async function openLogin(){ window.location.href = '/login.html'; }
 
-  async function signIn(){
-    await ensureConfigAndGis();
-    if (!googleClientId){
-      alert('Falta configurar GOOGLE_CLIENT_ID');
-      throw new Error('missing_client_id');
-    }
-    return new Promise((resolve, reject) => {
-      try{
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response) => {
-            try {
-              const res = await fetch('/api/login', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ idToken: response.credential })
-              });
-              const data = await res.json();
-              if (!res.ok){
-                alert('Acceso restringido a @ufps.edu.co');
-                return reject(new Error(data.error||'login_failed'));
-              }
-              resolve(data);
-            } catch (e) { reject(e); }
-          },
-          ux_mode: 'popup',
-          auto_select: false
-        });
-        // Mostrar One Tap / selector de cuenta sin alertas adicionales
-        window.google.accounts.id.prompt();
-      }catch(e){ reject(e); }
-    });
-  }
-
-  if (btnLogin){ btnLogin.addEventListener('click', async () => { await signIn(); await checkSessionUI(); }); }
+  if (btnLogin){ btnLogin.addEventListener('click', openLogin); }
   if (btnLogout){ btnLogout.addEventListener('click', async () => { await fetch('/api/logout', {method:'POST'}); await checkSessionUI(); }); }
+  if (btnUser){ btnUser.addEventListener('click', openProfile); }
   async function handleProtectedCta(e){
     e.preventDefault();
     const me = await fetch('/api/me').then(r=>r.json()).catch(()=>({authenticated:false}));
-    if (!me.authenticated){
-      try { await signIn(); } catch {}
-      const me2 = await fetch('/api/me').then(r=>r.json()).catch(()=>({authenticated:false}));
-      if (!me2.authenticated){ return; }
-    }
+    if (!me.authenticated){ return openLogin(); }
     openModal();
   }
 
@@ -145,7 +109,44 @@
     }
   }); }
 
+  if (profileForm){ profileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(profileForm).entries());
+    const res = await fetch('/api/profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    const j = await res.json();
+    if (res.ok){ alert('Perfil actualizado'); closeProfile(); checkSessionUI(); } else { alert('Error: '+(j.error||'desconocido')); }
+  }); }
+
+  if (passwordForm){ passwordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(passwordForm).entries());
+    const res = await fetch('/api/password', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    const j = await res.json();
+    if (res.ok){ alert('Contraseña actualizada'); passwordForm.reset(); } else { alert('Error: '+(j.error||'desconocido')); }
+  }); }
+
   checkSessionUI();
 })();
 
-
+// Login page JS
+(function(){
+  const form = document.getElementById('loginForm');
+  const btnRegister = document.getElementById('btnRegister');
+  const msg = document.getElementById('loginMsg');
+  if (!form) return;
+  function setMsg(t){ if (msg) msg.textContent = t || ''; }
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form).entries());
+    const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:data.email, password:data.password }) });
+    const j = await res.json();
+    if (res.ok){ window.location.href = '/modulos'; } else { setMsg(j.error||'Error'); }
+  });
+  if (btnRegister){ btnRegister.addEventListener('click', async () => {
+    const data = Object.fromEntries(new FormData(form).entries());
+    if (!data.username){ return setMsg('Ingresa un usuario para registrarte'); }
+    const res = await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:data.email, username:data.username, password:data.password }) });
+    const j = await res.json();
+    if (res.ok){ window.location.href = '/modulos'; } else { setMsg(j.error||'Error'); }
+  }); }
+})();

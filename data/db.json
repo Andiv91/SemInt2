@@ -1,0 +1,11 @@
+{
+  "users": [
+    {
+      "id": "481c4b93-4968-4ccd-b846-f5003bc1dcbf",
+      "email": "andiv0901@gmail.com",
+      "username": "AngelD9",
+      "passwordHash": "d57e01b762b354e879a2919abea30265ec99110c674cd0eca23119270e2c8165f46a85d5b02b6120eb0968762052eda7d439b9884ea50289139bc4bbc9f51690",
+      "salt": "e32e3bf5dd1d5c3098d74ecbed8fe577"
+    }
+  ]
+}

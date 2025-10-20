@@ -95,6 +95,15 @@ body{
 .modal-close{position:absolute; top:10px; right:10px; background:transparent; color:#fff; border:0; font-size:18px; cursor:pointer}
 .form-note{color:var(--muted); font-size:13px; margin-top:8px}
 
+/* Login */
+.login-card{background:#14121b; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:28px; width:min(560px,92%); margin:0 auto; box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.login-card h1{margin:0 0 6px}
+.login-card .muted{color:#b7b7c2}
+.login-card form{display:grid; gap:14px; margin-top:14px}
+.login-card label{display:grid; gap:6px; font-weight:600}
+.login-card input{background:#120f1b; color:var(--text); border:1px solid rgba(255,255,255,.08); padding:12px 12px; border-radius:10px}
+.login-card .row{display:flex; gap:12px; align-items:center}
+
 /* Pages: Modulos */
 .modules-header{padding:40px 0 10px}
 .modules-header h1{text-align:center; font-size:48px; margin:0}
@@ -122,6 +131,8 @@ body{
 .ava-player{padding:20px 0 80px}
 .player-card{background:#0c0b11; border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:16px; box-shadow:0 20px 40px rgba(0,0,0,.5)}
 .player-card video{width:100%; height:auto; display:block; border-radius:12px}
+.yt-frame{position:relative; width:100%; padding-top:56.25%; border-radius:12px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.yt-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
 
 /* Responsive */
 @media (max-width: 960px){

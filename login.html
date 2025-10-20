@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Iniciar Sesión — CSECV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand" aria-label="CSECV Home">
+          <span class="brand-dot" aria-hidden="true"></span>
+          CSECV
+        </a>
+        <nav class="main-nav" aria-label="Principal">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/modulos">Módulos</a></li>
+          </ul>
+        </nav>
+        <div class="nav-actions"></div>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">☰</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="container" style="padding:48px 0 80px">
+        <div class="login-card">
+          <h1>Iniciar Sesión</h1>
+          <p class="muted">Usa tu correo para registrarte o iniciar.</p>
+          <form id="loginForm">
+            <label>Correo <input type="email" name="email" required /></label>
+            <label>Usuario <input type="text" name="username" placeholder="(solo al registrarte)" /></label>
+            <label>Contraseña <input type="password" name="password" required /></label>
+            <div class="row">
+              <button type="submit" class="btn btn-primary">Entrar</button>
+              <button type="button" id="btnRegister" class="btn btn-ghost">Registrarme</button>
+            </div>
+          </form>
+          <p id="loginMsg" class="muted"></p>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+  </html>
+
+
