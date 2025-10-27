@@ -21,12 +21,108 @@
     <main>
       <section class="container phishing-hero">
         <figure class="media">
-          <img src="https://images.unsplash.com/photo-1497493292307-31c376b6e479?q=80&w=1600&auto=format&fit=crop" alt="Buenas prácticas generales" />
+          <img src="images/general.jpg" alt="Buenas prácticas generales" />
         </figure>
         <div class="copy">
           <h1>General</h1>
           <p class="lead">Buenas prácticas: contraseñas fuertes, MFA, bloquea tu equipo, actualiza software.</p>
-          <p><a class="next-link" href="/video-general.html">Siguiente aula →</a></p>
+          <div class="module-video">
+            <div class="player-card yt-frame">
+              <iframe src="https://www.youtube.com/embed/2ZZQlgV2Gus" allowfullscreen title="Buenas prácticas" loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container module-news">
+        <div class="quiz-header"><h2>Noticias relacionadas</h2></div>
+        <div class="news-grid">
+          <article class="news-card"><a href="https://www.cybersecuritydive.com/news/it-leaders-concern-ai-cyberattacks-survey/802151/" target="_blank" rel="noopener">Más ataques con IA, dicen empresas</a><p>Encuesta revela preocupaciones por IA y ciberataques.</p></article>
+          <article class="news-card"><a href="https://www.csoonline.com/article/4049373/how-the-generative-ai-boom-opens-up-new-privacy-and-cybersecurity-risks.html" target="_blank" rel="noopener">Riesgos de privacidad con IA generativa</a><p>Nuevos vectores y mitigaciones.</p></article>
+          <article class="news-card"><a href="https://www.theguardian.com/technology/2025/sep/08/meta-user-data-lawsuit-whatsapp" target="_blank" rel="noopener">Demanda por datos en WhatsApp</a><p>Ex-jefe de seguridad denuncia riesgos a usuarios.</p></article>
+          <article class="news-card"><a href="https://www.securitymagazine.com/articles/101922-cyberattack-disrupts-european-airports-security-leaders-respond" target="_blank" rel="noopener">Ciberataque a aeropuertos europeos</a><p>Respuesta de líderes de seguridad.</p></article>
+          <article class="news-card"><a href="https://news.bgov.com/bloomberg-government-news/cybersecurity-information-sharing-law-update-advances-in-house" target="_blank" rel="noopener">Ley de intercambio de información</a><p>Avances legislativos en ciberseguridad.</p></article>
+        </div>
+      </section>
+
+      <section class="container module-courses">
+        <h2>Cursos recomendados</h2>
+        <div class="courses-grid">
+          <article class="course-card"><a href="https://www.coursera.org/courses?query=cybersecurity" target="_blank" rel="noopener">Coursera: Cybersecurity</a><p>Cursos desde cero a avanzado.</p></article>
+          <article class="course-card"><a href="https://www.udemy.com/topic/cyber-security/" target="_blank" rel="noopener">Udemy: Cyber Security</a><p>Amplio catálogo práctico.</p></article>
+          <article class="course-card"><a href="https://online.lifelonglearning.jhu.edu/jhu-cybersecurity-certificate-program" target="_blank" rel="noopener">JHU Cybersecurity Certificate</a><p>Programa profesional.</p></article>
+          <article class="course-card"><a href="https://www.cisa.gov/cybersecurity-training-exercises" target="_blank" rel="noopener">CISA Training</a><p>Entrenamientos y ejercicios.</p></article>
+          <article class="course-card"><a href="https://www.isc2.org/" target="_blank" rel="noopener">ISC2: Courses & Cert</a><p>Certificaciones reconocidas.</p></article>
+        </div>
+      </section>
+
+      <section class="container quiz-cta">
+        <div class="login-card">
+          <div class="quiz-header"><h2>Cuestionario General</h2></div>
+          <form class="quiz" data-topic="general">
+            <div class="quiz-q">1) ¿Qué es MFA?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q1" value="a"/> Un gestor</label>
+              <label><input type="radio" name="q1" value="b"/> Autenticación multi-factor</label>
+              <label><input type="radio" name="q1" value="c"/> Un antivirus</label>
+            </div>
+            <div class="quiz-q">2) ¿Qué contraseña es más segura?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q2" value="a"/> 123456</label>
+              <label><input type="radio" name="q2" value="b"/> Frase larga aleatoria</label>
+              <label><input type="radio" name="q2" value="c"/> Nombre+1</label>
+            </div>
+            <div class="quiz-q">3) ¿Qué hacer si recibes un correo sospechoso?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q3" value="a"/> Abrir enlaces</label>
+              <label><input type="radio" name="q3" value="b"/> Reportar/verificar</label>
+              <label><input type="radio" name="q3" value="c"/> Reenviar a todos</label>
+            </div>
+            <div class="quiz-q">4) ¿Qué es un gestor de contraseñas?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q4" value="a"/> Un editor de texto</label>
+              <label><input type="radio" name="q4" value="b"/> Herramienta para guardar contraseñas cifradas</label>
+              <label><input type="radio" name="q4" value="c"/> Un antivirus</label>
+            </div>
+            <div class="quiz-q">5) ¿Qué es phishing?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q5" value="a"/> Limpieza de archivos</label>
+              <label><input type="radio" name="q5" value="b"/> Engaño para obtener datos</label>
+              <label><input type="radio" name="q5" value="c"/> Copia de seguridad</label>
+            </div>
+            <div class="quiz-q">6) ¿Qué es buena práctica en dispositivos?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q6" value="a"/> Actualizarlos regularmente</label>
+              <label><input type="radio" name="q6" value="b"/> Desactivar parches</label>
+              <label><input type="radio" name="q6" value="c"/> Usar cualquier app</label>
+            </div>
+            <div class="quiz-q">7) ¿Qué hacer al usar redes Wi-Fi públicas?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q7" value="a"/> Enviar datos sensibles</label>
+              <label><input type="radio" name="q7" value="b"/> Usar VPN y evitar operaciones críticas</label>
+              <label><input type="radio" name="q7" value="c"/> Desactivar firewall</label>
+            </div>
+            <div class="quiz-q">8) ¿Cuándo bloquear tu equipo?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q8" value="a"/> Siempre al levantarte</label>
+              <label><input type="radio" name="q8" value="b"/> Nunca</label>
+              <label><input type="radio" name="q8" value="c"/> Solo al final del día</label>
+            </div>
+            <div class="quiz-q">9) ¿Qué factor NO es parte de MFA?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q9" value="a"/> Algo que sabes</label>
+              <label><input type="radio" name="q9" value="b"/> Algo que eres</label>
+              <label><input type="radio" name="q9" value="c"/> Color favorito</label>
+            </div>
+            <div class="quiz-q">10) ¿Qué hacer con apps no utilizadas?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q10" value="a"/> Mantener permisos</label>
+              <label><input type="radio" name="q10" value="b"/> Revocar/eliminar</label>
+              <label><input type="radio" name="q10" value="c"/> Compartir credenciales</label>
+            </div>
+            <div class="quiz-actions"><button class="btn btn-primary" type="submit">Enviar</button></div>
+            <div class="quiz-result" aria-live="polite"></div>
+          </form>
         </div>
       </section>
     </main>

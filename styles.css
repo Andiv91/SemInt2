@@ -134,6 +134,30 @@ body{
 .yt-frame{position:relative; width:100%; padding-top:56.25%; border-radius:12px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,.5)}
 .yt-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
 
+/* Module detail sections */
+.module-video{padding:10px 0 40px}
+.module-news, .module-courses{padding:10px 0 60px}
+.module-news h2, .module-courses h2{margin:0 0 12px}
+.news-grid, .courses-grid{display:grid; grid-template-columns: repeat(3, 1fr); gap:20px}
+.news-card, .course-card{background:#1c1a22; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:16px}
+.news-card a, .course-card a{color:#cbb5ff; text-decoration:none; font-weight:700}
+.news-card p, .course-card p{color:#c9c5d6; margin:8px 0 0}
+.quiz-cta{padding:20px 0 80px}
+.quiz-cta .center{justify-content:center}
+.quiz-header{display:flex; align-items:center; justify-content:space-between}
+.quiz-q{margin:12px 0; font-weight:700}
+.quiz-options{display:grid; gap:10px}
+.quiz-options label{display:flex; gap:10px; align-items:center; background:#14121b; border:1px solid rgba(255,255,255,.08); padding:10px 12px; border-radius:10px; cursor:pointer}
+.quiz-actions{display:flex; gap:12px; margin-top:12px}
+.quiz-result{margin-top:12px; font-weight:700}
+
+@media (max-width: 960px){
+  .news-grid, .courses-grid{grid-template-columns: repeat(2, 1fr)}
+}
+@media (max-width: 720px){
+  .news-grid, .courses-grid{grid-template-columns: 1fr}
+}
+
 /* Responsive */
 @media (max-width: 960px){
   .hero-grid{grid-template-columns:1fr}

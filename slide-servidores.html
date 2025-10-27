@@ -21,12 +21,108 @@
     <main>
       <section class="container phishing-hero">
         <figure class="media">
-          <img src="https://images.unsplash.com/photo-1518779578993-ec3579fee39f?q=80&w=1600&auto=format&fit=crop" alt="Rack de servidores" />
+          <img src="images/servidores.jpg" alt="Rack de servidores" />
         </figure>
         <div class="copy">
           <h1>Servidores</h1>
           <p class="lead">Aplica actualizaciones, mínimos privilegios y copias de seguridad. Monitorea recursos.</p>
-          <p><a class="next-link" href="/video-servidores.html">Siguiente aula →</a></p>
+          <div class="module-video">
+            <div class="player-card yt-frame">
+              <iframe src="https://www.youtube.com/embed/UjCDWCeHCzY" allowfullscreen title="Qué es un servidor" loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container module-news">
+        <div class="quiz-header"><h2>Noticias relacionadas</h2></div>
+        <div class="news-grid">
+          <article class="news-card"><a href="https://thehackernews.com/2025/09/first-malicious-mcp-server-found.html" target="_blank" rel="noopener">Servidor MCP malicioso roba emails</a><p>Primer MCP malicioso detectado robando correos.</p></article>
+          <article class="news-card"><a href="https://www.networkworld.com/article/4018955/ibm-pumps-up-ai-security-for-new-enterprise-power11-server-family.html" target="_blank" rel="noopener">IBM Power11: IA y seguridad</a><p>Nueva familia con mejoras de seguridad.</p></article>
+          <article class="news-card"><a href="https://thehackernews.com/2025/07/critical-microsoft-sharepoint-flaw.html" target="_blank" rel="noopener">Zero‑day crítico en SharePoint</a><p>Explotado activamente, aún sin parche.</p></article>
+          <article class="news-card"><a href="https://www.reuters.com/sustainability/boards-policy-regulation/microsoft-alerts-businesses-governments-server-software-attack-2025-07-21/" target="_blank" rel="noopener">Alerta por ataque a software de servidor</a><p>Microsoft advierte a empresas y gobiernos.</p></article>
+          <article class="news-card"><a href="https://thehackernews.com/2025/09/android-security-alert-google-patches.html" target="_blank" rel="noopener">Google corrige 120 fallos en Android</a><p>Incluye dos zero‑days bajo ataque.</p></article>
+        </div>
+      </section>
+
+      <section class="container module-courses">
+        <h2>Cursos recomendados</h2>
+        <div class="courses-grid">
+          <article class="course-card"><a href="https://www.coursera.org/" target="_blank" rel="noopener">Administración de servidores</a><p>Roles, servicios y seguridad.</p></article>
+          <article class="course-card"><a href="https://www.udemy.com/" target="_blank" rel="noopener">Hardening</a><p>Endurecimiento de configuraciones.</p></article>
+          <article class="course-card"><a href="https://www.edx.org/" target="_blank" rel="noopener">Backups y DR</a><p>Estrategias de recuperación.</p></article>
+          <article class="course-card"><a href="https://www.pluralsight.com/" target="_blank" rel="noopener">Monitoreo</a><p>Alerting y observabilidad.</p></article>
+          <article class="course-card"><a href="https://www.linkedin.com/learning/" target="_blank" rel="noopener">Accesos y privilegios</a><p>Just-in-time y MFA.</p></article>
+        </div>
+      </section>
+
+      <section class="container quiz-cta">
+        <div class="login-card">
+          <div class="quiz-header"><h2>Cuestionario de Servidores</h2></div>
+          <form class="quiz" data-topic="servidores">
+            <div class="quiz-q">1) ¿Qué política reduce impacto de cuentas?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q1" value="a"/> Privilegios mínimos</label>
+              <label><input type="radio" name="q1" value="b"/> Acceso global</label>
+              <label><input type="radio" name="q1" value="c"/> Contraseñas compartidas</label>
+            </div>
+            <div class="quiz-q">2) ¿Qué validar de los backups?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q2" value="a"/> Solo tamaño</label>
+              <label><input type="radio" name="q2" value="b"/> Restauración periódica</label>
+              <label><input type="radio" name="q2" value="c"/> Nombre del archivo</label>
+            </div>
+            <div class="quiz-q">3) ¿Qué capa protege frente a tráfico malicioso?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q3" value="a"/> Firewall</label>
+              <label><input type="radio" name="q3" value="b"/> Fondo de pantalla</label>
+              <label><input type="radio" name="q3" value="c"/> Papelera</label>
+            </div>
+            <div class="quiz-q">4) ¿Qué logs son útiles?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q4" value="a"/> Acceso y sistema</label>
+              <label><input type="radio" name="q4" value="b"/> Solo música</label>
+              <label><input type="radio" name="q4" value="c"/> Ninguno</label>
+            </div>
+            <div class="quiz-q">5) ¿Qué hacer con servicios innecesarios?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q5" value="a"/> Deshabilitar</label>
+              <label><input type="radio" name="q5" value="b"/> Dejar activos</label>
+              <label><input type="radio" name="q5" value="c"/> Exponer</label>
+            </div>
+            <div class="quiz-q">6) ¿Qué mejora autenticación?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q6" value="a"/> MFA</label>
+              <label><input type="radio" name="q6" value="b"/> Usuarios compartidos</label>
+              <label><input type="radio" name="q6" value="c"/> Contraseñas débiles</label>
+            </div>
+            <div class="quiz-q">7) ¿Qué política para parches?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q7" value="a"/> Calendario regular</label>
+              <label><input type="radio" name="q7" value="b"/> Nunca</label>
+              <label><input type="radio" name="q7" value="c"/> Al azar</label>
+            </div>
+            <div class="quiz-q">8) ¿Qué acceso dar a cuentas de servicio?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q8" value="a"/> Mínimos necesarios</label>
+              <label><input type="radio" name="q8" value="b"/> Admin global</label>
+              <label><input type="radio" name="q8" value="c"/> Compartidas</label>
+            </div>
+            <div class="quiz-q">9) ¿Qué monitorear?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q9" value="a"/> Recursos, disponibilidad y seguridad</label>
+              <label><input type="radio" name="q9" value="b"/> Colores</label>
+              <label><input type="radio" name="q9" value="c"/> Música</label>
+            </div>
+            <div class="quiz-q">10) ¿Qué rol para tareas críticas?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q10" value="a"/> Cuentas separadas y auditadas</label>
+              <label><input type="radio" name="q10" value="b"/> Usuario único para todo</label>
+              <label><input type="radio" name="q10" value="c"/> Invitado</label>
+            </div>
+            <div class="quiz-actions"><button class="btn btn-primary" type="submit">Enviar</button></div>
+            <div class="quiz-result" aria-live="polite"></div>
+          </form>
         </div>
       </section>
     </main>

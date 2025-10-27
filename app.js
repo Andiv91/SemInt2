@@ -125,6 +125,32 @@
     if (res.ok){ alert('Contraseña actualizada'); passwordForm.reset(); } else { alert('Error: '+(j.error||'desconocido')); }
   }); }
 
+  // Quiz generic handling: score and feedback
+  document.querySelectorAll('form.quiz').forEach(form => {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const resultEl = form.querySelector('.quiz-result');
+      const answers = {};
+      new FormData(form).forEach((v, k) => { answers[k] = v; });
+      // Simple placeholder key per topic (2 preguntas por demo)
+      const topic = form.getAttribute('data-topic');
+      const keys = {
+        'seguridad-fisica': { q1:'b', q2:'a', q3:'c', q4:'b', q5:'a', q6:'c', q7:'b', q8:'a', q9:'c', q10:'b' },
+        'servicios-externos': { q1:'b', q2:'a', q3:'c', q4:'b', q5:'a', q6:'b', q7:'c', q8:'a', q9:'b', q10:'c' },
+        'links-archivos': { q1:'b', q2:'b', q3:'c', q4:'a', q5:'b', q6:'c', q7:'a', q8:'b', q9:'c', q10:'a' },
+        'servidores': { q1:'a', q2:'b', q3:'c', q4:'a', q5:'b', q6:'c', q7:'a', q8:'b', q9:'c', q10:'a' },
+        'general': { q1:'b', q2:'b', q3:'a', q4:'c', q5:'b', q6:'a', q7:'c', q8:'b', q9:'a', q10:'c' }
+      }[topic] || {};
+      let score = 0, total = Object.keys(keys).length;
+      for (const k in keys){ if (answers[k] === keys[k]) score++; }
+      let msg = `Resultado: ${score}/${total}. `;
+      if (score <= 3) msg += 'Nivel bajo. Te invitamos a comenzar con los cursos recomendados y el video del tema.';
+      else if (score <= 6) msg += 'Nivel medio. ¡Buen progreso! Refuerza con los cursos recomendados para afianzar conceptos.';
+      else msg += 'Nivel alto. ¡Excelente! Si deseas profundizar más, explora los cursos recomendados.';
+      if (resultEl) resultEl.textContent = msg;
+    });
+  });
+
   checkSessionUI();
 })();
 

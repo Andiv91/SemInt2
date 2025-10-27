@@ -21,12 +21,110 @@
     <main>
       <section class="container phishing-hero">
         <figure class="media">
-          <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1600&auto=format&fit=crop" alt="Correo con adjuntos y enlaces" />
+          <img src="images/linksyarchivos.jpg" alt="Links y archivos" />
         </figure>
         <div class="copy">
           <h1>Links y Archivos</h1>
           <p class="lead">No abras adjuntos ni enlaces sospechosos. Verifica remitente y extensión; usa antivirus.</p>
-          <p><a class="next-link" href="/video-links-archivos.html">Siguiente aula →</a></p>
+          <div class="module-video">
+            <div class="player-card yt-frame">
+              <iframe src="https://www.youtube.com/embed/TlB-vGW-xLQ" allowfullscreen title="Links y adjuntos seguros" loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container module-news">
+        <div class="quiz-header"><h2>Noticias relacionadas</h2></div>
+        <div class="news-grid">
+          <article class="news-card"><a href="https://www.helpnetsecurity.com/2025/10/15/windows-file-explorer-blocks-risky-previews/" target="_blank" rel="noopener">Windows bloquea previews riesgosos</a><p>Actualización desactiva vistas para archivos de Internet.</p></article>
+          <article class="news-card"><a href="https://arxiv.org/abs/2509.12345" target="_blank" rel="noopener">PhishLumos: mitigación proactiva</a><p>Sistema multiagente contra campañas de phishing.</p></article>
+          <article class="news-card"><a href="https://arxiv.org/abs/2507.01234" target="_blank" rel="noopener">Trivial Trojans: exfiltración vía MCP</a><p>Cómo servidores MCP permiten extraer datos.</p></article>
+          <article class="news-card"><a href="https://thehackernews.com/2025/09/remcos-rat-delivered-via-lnk-and-mshta.html" target="_blank" rel="noopener">Remcos RAT por LNK/MSHTA</a><p>Campaña basada en PowerShell.</p></article>
+          <article class="news-card"><a href="https://thehackernews.com/2025/08/patchwork-uses-malicious-lnk-files.html" target="_blank" rel="noopener">Patchwork usa LNK maliciosos</a><p>Spear‑phishing a defensa turca.</p></article>
+        </div>
+      </section>
+
+      <section class="container module-courses">
+        <h2>Cursos recomendados</h2>
+        <div class="courses-grid">
+          <article class="course-card"><a href="https://www.netacad.com/courses/cybersecurity/introduction-cybersecurity" target="_blank" rel="noopener">Cisco: Introduction to Cybersecurity</a><p>Conceptos básicos para protegerte.</p></article>
+          <article class="course-card"><a href="https://www.navex.com/en-us/courses/cybersecurity-training/" target="_blank" rel="noopener">NAVEX: Cybersecurity Basics</a><p>Buenas prácticas esenciales.</p></article>
+          <article class="course-card"><a href="https://www.intertek.com/cybersecurity/training/" target="_blank" rel="noopener">Intertek: Awareness Training</a><p>Conciencia y reducción de riesgos.</p></article>
+          <article class="course-card"><a href="https://learn.questce.com/online-training/cybersecurity-security-awareness" target="_blank" rel="noopener">QuestCE: Security Awareness</a><p>Refuerza protocolos personales.</p></article>
+          <article class="course-card"><a href="https://www.hhs.gov/ocio/cybersecurity/awareness-training/index.html" target="_blank" rel="noopener">HHS: Awareness Training</a><p>Módulos de phishing y fundamentos.</p></article>
+        </div>
+      </section>
+
+      <section class="container quiz-cta">
+        <div class="login-card">
+          <div class="quiz-header"><h2>Cuestionario de Links y Archivos</h2></div>
+          <form class="quiz" data-topic="links-archivos">
+            <div class="quiz-q">1) ¿Qué debes revisar antes de abrir un enlace?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q1" value="a"/> Solo el texto</label>
+              <label><input type="radio" name="q1" value="b"/> La URL real y el dominio</label>
+              <label><input type="radio" name="q1" value="c"/> El color del botón</label>
+            </div>
+            <div class="quiz-q">2) ¿Qué es buena práctica con adjuntos?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q2" value="a"/> Abrir cualquier .exe</label>
+              <label><input type="radio" name="q2" value="b"/> Escanear con antivirus</label>
+              <label><input type="radio" name="q2" value="c"/> Compartir sin revisar</label>
+            </div>
+            <div class="quiz-q">3) ¿Qué indica un dominio lookalike?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q3" value="a"/> Es confiable</label>
+              <label><input type="radio" name="q3" value="b"/> Puede ser phishing</label>
+              <label><input type="radio" name="q3" value="c"/> Es más corto</label>
+            </div>
+            <div class="quiz-q">4) ¿Qué hacer con archivos inesperados de contactos desconocidos?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q4" value="a"/> No abrir y verificar</label>
+              <label><input type="radio" name="q4" value="b"/> Abrir de inmediato</label>
+              <label><input type="radio" name="q4" value="c"/> Subir a redes</label>
+            </div>
+            <div class="quiz-q">5) ¿Qué extensión suele ser peligrosa?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q5" value="a"/> .jpg</label>
+              <label><input type="radio" name="q5" value="b"/> .exe</label>
+              <label><input type="radio" name="q5" value="c"/> .txt</label>
+            </div>
+            <div class="quiz-q">6) ¿Qué usar para verificar un enlace acortado?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q6" value="a"/> Click derecho sin leer</label>
+              <label><input type="radio" name="q6" value="b"/> Servicios de preview/expand</label>
+              <label><input type="radio" name="q6" value="c"/> Ignorar</label>
+            </div>
+            <div class="quiz-q">7) ¿Qué campo del correo ayuda a validar la fuente?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q7" value="a"/> Asunto</label>
+              <label><input type="radio" name="q7" value="b"/> Dirección real del remitente</label>
+              <label><input type="radio" name="q7" value="c"/> Color del fondo</label>
+            </div>
+            <div class="quiz-q">8) ¿Qué hacer si un enlace solicita credenciales inesperadas?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q8" value="a"/> Ingresarlas</label>
+              <label><input type="radio" name="q8" value="b"/> Cerrar y reportar</label>
+              <label><input type="radio" name="q8" value="c"/> Compartir</label>
+            </div>
+            <div class="quiz-q">9) ¿Qué es seguro al compartir archivos sensibles?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q9" value="a"/> Enlace público sin contraseña</label>
+              <label><input type="radio" name="q9" value="b"/> Enlace con contraseña y expiración</label>
+              <label><input type="radio" name="q9" value="c"/> Por redes sociales</label>
+            </div>
+            <div class="quiz-q">10) ¿Qué significa HTTPS en una URL?</div>
+            <div class="quiz-options">
+              <label><input type="radio" name="q10" value="a"/> Sitio divertido</label>
+              <label><input type="radio" name="q10" value="b"/> Cifrado en tránsito</label>
+              <label><input type="radio" name="q10" value="c"/> No tiene impacto</label>
+            </div>
+            <div class="quiz-actions">
+              <button class="btn btn-primary" type="submit">Enviar</button>
+            </div>
+            <div class="quiz-result" aria-live="polite"></div>
+          </form>
         </div>
       </section>
     </main>
