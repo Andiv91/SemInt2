@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Panel de Administración — CSECV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .admin-container { padding: 40px 0; }
+      .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+      .admin-tabs { display: flex; gap: 12px; margin-bottom: 30px; }
+      .admin-tab { padding: 12px 24px; background: var(--card); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; cursor: pointer; color: var(--muted); }
+      .admin-tab.active { background: var(--brand); color: white; }
+      .admin-content { display: none; }
+      .admin-content.active { display: block; }
+      .admin-form { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 20px; }
+      .admin-form label { display: block; margin-bottom: 8px; font-weight: 600; }
+      .admin-form input, .admin-form textarea { width: 100%; padding: 12px; background: #120f1b; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; color: var(--text); margin-bottom: 16px; }
+      .admin-list { display: grid; gap: 16px; }
+      .admin-item { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); display: flex; justify-content: space-between; align-items: start; }
+      .admin-item-content { flex: 1; }
+      .admin-item-actions { display: flex; gap: 8px; }
+      .btn-small { padding: 8px 16px; font-size: 14px; }
+      .error { color: #ff6b6b; margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand"><span class="brand-dot"></span>CSECV</a>
+        <nav class="main-nav"><ul><li><a href="/modulos">Módulos</a></li></ul></nav>
+        <div class="nav-actions">
+          <button class="btn btn-ghost" id="btn-logout">Salir</button>
+          <button class="btn btn-ghost" id="btn-user"></button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container admin-container">
+      <div class="admin-header">
+        <h1>Panel de Administración</h1>
+        <div id="currentUserInfo"></div>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="topics">Temas</button>
+        <button class="admin-tab" data-tab="news">Noticias</button>
+        <button class="admin-tab" data-tab="courses">Cursos</button>
+      </div>
+
+      <!-- Temas -->
+      <div class="admin-content active" id="content-topics">
+        <div class="admin-form">
+          <h3>Crear Nuevo Tema</h3>
+          <form id="form-new-topic">
+            <label>Slug (URL-amigable) * <input type="text" name="slug" placeholder="seguridad-fisica" required /></label>
+            <label>Título * <input type="text" name="title" placeholder="Seguridad Física" required /></label>
+            <label>Descripción <textarea name="description" rows="3" placeholder="Aprende a proteger tus activos..."></textarea></label>
+            <label>Logo (Emoji) <input type="text" name="logo" placeholder="💾" /></label>
+            <label>Video YouTube ID <input type="text" name="videoUrl" placeholder="FGNGRvKr6oE" /></label>
+            <button class="btn btn-primary" type="submit">Crear Tema</button>
+          </form>
+          <p id="error-topics" class="error"></p>
+        </div>
+
+        <h3>Temas Existentes</h3>
+        <div class="admin-list" id="list-topics">
+          <!-- Se cargará dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Noticias -->
+      <div class="admin-content" id="content-news">
+        <div class="admin-form">
+          <h3>Agregar Noticia</h3>
+          <form id="form-new-news">
+            <label>Tema * <select name="topicId" id="select-topic-news" required></select></label>
+            <label>Título * <input type="text" name="title" placeholder="Título de la noticia" required /></label>
+            <label>URL * <input type="url" name="url" placeholder="https://..." required /></label>
+            <label>Descripción <textarea name="description" rows="3" placeholder="Descripción breve..."></textarea></label>
+            <button class="btn btn-primary" type="submit">Agregar Noticia</button>
+          </form>
+          <p id="error-news" class="error"></p>
+        </div>
+
+        <h3>Noticias Existentes</h3>
+        <div class="admin-list" id="list-news">
+          <!-- Se cargará dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Cursos -->
+      <div class="admin-content" id="content-courses">
+        <div class="admin-form">
+          <h3>Agregar Curso</h3>
+          <form id="form-new-course">
+            <label>Tema * <select name="topicId" id="select-topic-courses" required></select></label>
+            <label>Título * <input type="text" name="title" placeholder="Título del curso" required /></label>
+            <label>URL * <input type="url" name="url" placeholder="https://..." required /></label>
+            <label>Descripción <textarea name="description" rows="3" placeholder="Descripción breve..."></textarea></label>
+            <button class="btn btn-primary" type="submit">Agregar Curso</button>
+          </form>
+          <p id="error-courses" class="error"></p>
+        </div>
+
+        <h3>Cursos Existentes</h3>
+        <div class="admin-list" id="list-courses">
+          <!-- Se cargará dinámicamente -->
+        </div>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+    <script src="admin.js"></script>
+  </body>
+  </html>
+

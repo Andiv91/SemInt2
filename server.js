@@ -21,10 +21,10 @@ app.use(express.static(path.join(__dirname)));
 const dataDir = path.join(__dirname, 'data');
 const dbFile = path.join(dataDir, 'db.json');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
-if (!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify({ users: [] }, null, 2));
+if (!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify({ users: [], topics: [], news: [], courses: [] }, null, 2));
 
 function readDb(){
-  try { return JSON.parse(fs.readFileSync(dbFile, 'utf8')); } catch { return { users: [] }; }
+  try { return JSON.parse(fs.readFileSync(dbFile, 'utf8')); } catch { return { users: [], topics: [], news: [], courses: [] }; }
 }
 function writeDb(db){ fs.writeFileSync(dbFile, JSON.stringify(db, null, 2)); }
 
@@ -51,51 +51,6 @@ function verifySession(token){
   try { return JSON.parse(Buffer.from(body, 'base64url').toString('utf8')); } catch { return null; }
 }
 
-// Session info
-app.get('/api/me', (req, res) => {
-  const sess = req.cookies?.[sessionCookieName];
-  const data = verifySession(sess);
-  if (!data) return res.json({ authenticated: false });
-  return res.json({ authenticated: true, email: data.email, username: data.username, userId: data.userId });
-});
-
-// Register
-app.post('/api/register', (req, res) => {
-  const { email, username, password } = req.body || {};
-  if (!email || !username || !password) return res.status(400).json({ error: 'missing_fields' });
-  const db = readDb();
-  if (db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase())){
-    return res.status(409).json({ error: 'email_exists' });
-  }
-  const { salt, hash } = hashPassword(password);
-  const user = { id: crypto.randomUUID(), email, username, passwordHash: hash, salt };
-  db.users.push(user);
-  writeDb(db);
-  const token = signSession({ userId: user.id, email: user.email, username: user.username, t: Date.now() });
-  res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
-  res.json({ ok:true, email:user.email, username:user.username });
-});
-
-// Login
-app.post('/api/login', (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: 'missing_fields' });
-  const db = readDb();
-  const user = db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
-  if (!user || !verifyPassword(password, user.salt, user.passwordHash)){
-    return res.status(401).json({ error: 'invalid_credentials' });
-  }
-  const token = signSession({ userId: user.id, email: user.email, username: user.username, t: Date.now() });
-  res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
-  res.json({ ok:true, email:user.email, username:user.username });
-});
-
-// Logout
-app.post('/api/logout', (req, res) => {
-  res.clearCookie(sessionCookieName);
-  res.json({ ok: true });
-});
-
 // Middleware to require session
 function requireSession(req, res, next){
   const sess = req.cookies?.[sessionCookieName];
@@ -105,15 +60,283 @@ function requireSession(req, res, next){
   return next();
 }
 
-// Protected example: include company
-app.post('/api/companies', requireSession, (req, res) => {
-  const { companyName, contactName, phone } = req.body || {};
-  if (!companyName) return res.status(400).json({ error: 'missing_company_name' });
-  // For now, just echo back; later persist to DB
-  res.json({ ok: true, by: req.user.email, companyName, contactName, phone });
+// Role-based access control
+const roleHierarchy = { 'user': 0, 'course_editor': 1, 'news_editor': 2, 'theme_editor': 3, 'admin': 4 };
+function hasRole(requiredRole) {
+  return (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'unauthenticated' });
+    const db = readDb();
+    const user = db.users.find(u => u.id === req.user.userId);
+    if (!user) return res.status(404).json({ error: 'user_not_found' });
+    const userRole = roleHierarchy[user.role] || 0;
+    const required = roleHierarchy[requiredRole] || 0;
+    if (userRole < required) return res.status(403).json({ error: 'insufficient_permissions' });
+    next();
+  };
+}
+
+// ===== SESSION =====
+app.get('/api/me', (req, res) => {
+  const sess = req.cookies?.[sessionCookieName];
+  const data = verifySession(sess);
+  if (!data) return res.json({ authenticated: false });
+  const db = readDb();
+  const user = db.users.find(u => u.id === data.userId);
+  if (!user) return res.json({ authenticated: false });
+  return res.json({ authenticated: true, email: user.email, username: user.username, userId: user.id, role: user.role });
 });
 
-// Profile update
+// ===== AUTH =====
+app.post('/api/register', (req, res) => {
+  const { email, username, password } = req.body || {};
+  if (!email || !username || !password) return res.status(400).json({ error: 'missing_fields' });
+  const db = readDb();
+  if (db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase())){
+    return res.status(409).json({ error: 'email_exists' });
+  }
+  const { salt, hash } = hashPassword(password);
+  const user = { 
+    id: crypto.randomUUID(), 
+    email, 
+    username, 
+    passwordHash: hash, 
+    salt,
+    role: 'user',
+    notifications: { enabled: true, topics: [], settings: { news: true, courses: true, updates: true } },
+    createdAt: new Date().toISOString()
+  };
+  db.users.push(user);
+  writeDb(db);
+  const token = signSession({ userId: user.id, email: user.email, username: user.username, role: user.role, t: Date.now() });
+  res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
+  res.json({ ok:true, email:user.email, username:user.username, role: user.role });
+});
+
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'missing_fields' });
+  const db = readDb();
+  const user = db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
+  if (!user || !verifyPassword(password, user.salt, user.passwordHash)){
+    return res.status(401).json({ error: 'invalid_credentials' });
+  }
+  const token = signSession({ userId: user.id, email: user.email, username: user.username, role: user.role, t: Date.now() });
+  res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
+  res.json({ ok:true, email:user.email, username:user.username, role: user.role });
+});
+
+app.post('/api/logout', (req, res) => {
+  res.clearCookie(sessionCookieName);
+  res.json({ ok: true });
+});
+
+// ===== TOPICS (TEMAS) =====
+app.get('/api/topics', (req, res) => {
+  const db = readDb();
+  return res.json(db.topics);
+});
+
+app.get('/api/topics/:slug', (req, res) => {
+  const db = readDb();
+  const topic = db.topics.find(t => t.slug === req.params.slug);
+  if (!topic) return res.status(404).json({ error: 'topic_not_found' });
+  
+  // Get news and courses for this topic
+  const news = db.news.filter(n => n.topicId === topic.id);
+  const courses = db.courses.filter(c => c.topicId === topic.id);
+  
+  return res.json({ ...topic, news, courses });
+});
+
+app.post('/api/topics', requireSession, hasRole('theme_editor'), (req, res) => {
+  const { slug, title, description, logo, videoUrl } = req.body || {};
+  if (!slug || !title) return res.status(400).json({ error: 'missing_fields' });
+  const db = readDb();
+  if (db.topics.find(t => t.slug === slug)) return res.status(409).json({ error: 'topic_exists' });
+  const topic = {
+    id: crypto.randomUUID(),
+    slug,
+    title,
+    description: description || '',
+    logo: logo || '',
+    videoUrl: videoUrl || '',
+    items: [],
+    createdBy: req.user.userId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  db.topics.push(topic);
+  writeDb(db);
+  res.json({ ok: true, topic });
+});
+
+app.put('/api/topics/:id', requireSession, hasRole('theme_editor'), (req, res) => {
+  const { title, description, logo, videoUrl } = req.body || {};
+  const db = readDb();
+  const topic = db.topics.find(t => t.id === req.params.id);
+  if (!topic) return res.status(404).json({ error: 'topic_not_found' });
+  if (title) topic.title = title;
+  if (description !== undefined) topic.description = description;
+  if (logo !== undefined) topic.logo = logo;
+  if (videoUrl !== undefined) topic.videoUrl = videoUrl;
+  topic.updatedAt = new Date().toISOString();
+  writeDb(db);
+  res.json({ ok: true, topic });
+});
+
+app.delete('/api/topics/:id', requireSession, hasRole('admin'), (req, res) => {
+  const db = readDb();
+  const idx = db.topics.findIndex(t => t.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'topic_not_found' });
+  db.topics.splice(idx, 1);
+  writeDb(db);
+  res.json({ ok: true });
+});
+
+// ===== NEWS (NOTICIAS) =====
+app.get('/api/topics/:slug/news', (req, res) => {
+  const db = readDb();
+  const topic = db.topics.find(t => t.slug === req.params.slug);
+  if (!topic) return res.status(404).json({ error: 'topic_not_found' });
+  const news = db.news.filter(n => n.topicId === topic.id);
+  res.json(news);
+});
+
+app.post('/api/topics/:id/news', requireSession, hasRole('news_editor'), (req, res) => {
+  const { title, url, description } = req.body || {};
+  if (!title || !url) return res.status(400).json({ error: 'missing_fields' });
+  const db = readDb();
+  const topic = db.topics.find(t => t.id === req.params.id);
+  if (!topic) return res.status(404).json({ error: 'topic_not_found' });
+  const newsItem = {
+    id: crypto.randomUUID(),
+    topicId: topic.id,
+    title,
+    url,
+    description: description || '',
+    addedBy: req.user.userId,
+    addedAt: new Date().toISOString()
+  };
+  db.news.push(newsItem);
+  writeDb(db);
+  res.json({ ok: true, news: newsItem });
+});
+
+app.put('/api/news/:id', requireSession, hasRole('news_editor'), (req, res) => {
+  const { title, url, description } = req.body || {};
+  const db = readDb();
+  const newsItem = db.news.find(n => n.id === req.params.id);
+  if (!newsItem) return res.status(404).json({ error: 'news_not_found' });
+  if (req.user.role !== 'admin' && newsItem.addedBy !== req.user.userId) {
+    return res.status(403).json({ error: 'not_your_news' });
+  }
+  if (title) newsItem.title = title;
+  if (url) newsItem.url = url;
+  if (description !== undefined) newsItem.description = description;
+  writeDb(db);
+  res.json({ ok: true, news: newsItem });
+});
+
+app.delete('/api/news/:id', requireSession, hasRole('admin'), (req, res) => {
+  const db = readDb();
+  const idx = db.news.findIndex(n => n.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'news_not_found' });
+  db.news.splice(idx, 1);
+  writeDb(db);
+  res.json({ ok: true });
+});
+
+// ===== COURSES (CURSOS) =====
+app.get('/api/topics/:slug/courses', (req, res) => {
+  const db = readDb();
+  const topic = db.topics.find(t => t.slug === req.params.slug);
+  if (!topic) return res.status(404).json({ error: 'topic_not_found' });
+  const courses = db.courses.filter(c => c.topicId === topic.id);
+  res.json(courses);
+});
+
+app.post('/api/topics/:id/courses', requireSession, hasRole('course_editor'), (req, res) => {
+  const { title, url, description } = req.body || {};
+  if (!title || !url) return res.status(400).json({ error: 'missing_fields' });
+  const db = readDb();
+  const topic = db.topics.find(t => t.id === req.params.id);
+  if (!topic) return res.status(404).json({ error: 'topic_not_found' });
+  const course = {
+    id: crypto.randomUUID(),
+    topicId: topic.id,
+    title,
+    url,
+    description: description || '',
+    addedBy: req.user.userId,
+    addedAt: new Date().toISOString()
+  };
+  db.courses.push(course);
+  writeDb(db);
+  res.json({ ok: true, course });
+});
+
+app.put('/api/courses/:id', requireSession, hasRole('course_editor'), (req, res) => {
+  const { title, url, description } = req.body || {};
+  const db = readDb();
+  const course = db.courses.find(c => c.id === req.params.id);
+  if (!course) return res.status(404).json({ error: 'course_not_found' });
+  if (req.user.role !== 'admin' && course.addedBy !== req.user.userId) {
+    return res.status(403).json({ error: 'not_your_course' });
+  }
+  if (title) course.title = title;
+  if (url) course.url = url;
+  if (description !== undefined) course.description = description;
+  writeDb(db);
+  res.json({ ok: true, course });
+});
+
+app.delete('/api/courses/:id', requireSession, hasRole('admin'), (req, res) => {
+  const db = readDb();
+  const idx = db.courses.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'course_not_found' });
+  db.courses.splice(idx, 1);
+  writeDb(db);
+  res.json({ ok: true });
+});
+
+// ===== NOTIFICATIONS =====
+app.get('/api/notifications', requireSession, (req, res) => {
+  const db = readDb();
+  const user = db.users.find(u => u.id === req.user.userId);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+  res.json(user.notifications || { enabled: false, topics: [], settings: {} });
+});
+
+app.post('/api/notifications/subscribe', requireSession, (req, res) => {
+  const { topicId } = req.body || {};
+  if (!topicId) return res.status(400).json({ error: 'missing_topic_id' });
+  const db = readDb();
+  const user = db.users.find(u => u.id === req.user.userId);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+  if (!user.notifications) {
+    user.notifications = { enabled: true, topics: [], settings: { news: true, courses: true, updates: true } };
+  }
+  if (!user.notifications.topics.includes(topicId)) {
+    user.notifications.topics.push(topicId);
+  }
+  writeDb(db);
+  res.json({ ok: true, notifications: user.notifications });
+});
+
+app.post('/api/notifications/unsubscribe', requireSession, (req, res) => {
+  const { topicId } = req.body || {};
+  if (!topicId) return res.status(400).json({ error: 'missing_topic_id' });
+  const db = readDb();
+  const user = db.users.find(u => u.id === req.user.userId);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+  if (user.notifications && user.notifications.topics) {
+    user.notifications.topics = user.notifications.topics.filter(t => t !== topicId);
+  }
+  writeDb(db);
+  res.json({ ok: true, notifications: user.notifications });
+});
+
+// ===== PROFILE =====
 app.put('/api/profile', requireSession, (req, res) => {
   const { username } = req.body || {};
   if (!username) return res.status(400).json({ error: 'missing_username' });
@@ -122,12 +345,11 @@ app.put('/api/profile', requireSession, (req, res) => {
   if (!user) return res.status(404).json({ error: 'not_found' });
   user.username = username;
   writeDb(db);
-  const token = signSession({ userId: user.id, email: user.email, username: user.username, t: Date.now() });
+  const token = signSession({ userId: user.id, email: user.email, username: user.username, role: user.role, t: Date.now() });
   res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
   res.json({ ok:true, username:user.username });
 });
 
-// Change password
 app.put('/api/password', requireSession, (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   if (!currentPassword || !newPassword) return res.status(400).json({ error: 'missing_fields' });
@@ -142,20 +364,123 @@ app.put('/api/password', requireSession, (req, res) => {
   res.json({ ok:true });
 });
 
-// Clean routes for static pages
-app.get('/modulos', (req, res) => {
-  res.sendFile(path.join(__dirname, 'modulos.html'));
+// ===== STATIC ROUTES =====
+app.get('/temas', (req, res) => res.sendFile(path.join(__dirname, 'modulos.html')));
+app.get('/modulos', (req, res) => res.sendFile(path.join(__dirname, 'modulos.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+
+// Ruta dinámica para temas (reemplaza los slide-*.html estáticos)
+app.get('/slide-:slug.html', (req, res) => {
+  const db = readDb();
+  const topic = db.topics.find(t => t.slug === req.params.slug);
+  if (!topic) return res.status(404).send('Tema no encontrado');
+  
+  // Generar HTML dinámico basado en el tema
+  const html = `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${topic.title} — CSECV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand"><span class="brand-dot"></span>CSECV</a>
+        <nav class="main-nav"><ul><li><a href="/temas">Temas</a></li></ul></nav>
+        <div class="nav-actions">
+          <button class="btn btn-text" id="btn-login">Iniciar Sesión</button>
+          <button class="btn btn-ghost" id="btn-logout" style="display:none">Salir</button>
+          <button class="btn btn-ghost" id="btn-user" style="display:none"></button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section class="container phishing-hero">
+        <figure class="media">
+          <img src="https://images.unsplash.com/photo-1555255707-c07966088b7b?q=80&w=1600&auto=format&fit=crop" alt="${topic.title}" />
+        </figure>
+        <div class="copy">
+          <h1>${topic.title}</h1>
+          <p class="lead">${topic.description}</p>
+          ${topic.videoUrl ? `<div class="module-video">
+            <div class="player-card yt-frame">
+              <iframe src="https://www.youtube.com/embed/${topic.videoUrl}" allowfullscreen title="${topic.title}" loading="lazy"></iframe>
+            </div>
+          </div>` : ''}
+        </div>
+      </section>
+
+      <section class="container module-news">
+        <div class="quiz-header"><h2>Noticias relacionadas</h2></div>
+        <div class="news-grid" id="news-${topic.id}">
+          <p>Cargando noticias...</p>
+        </div>
+      </section>
+
+      <section class="container module-courses" id="courses-${topic.id}">
+        <h2>Cursos relacionados</h2>
+        <div class="courses-grid">
+          <p>Cargando cursos...</p>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+    <script>
+      // Cargar noticias y cursos dinámicamente
+      (async function() {
+        const topicId = '${topic.id}';
+        try {
+          const newsRes = await fetch('/api/topics/${topic.slug}/news');
+          const news = await newsRes.json();
+          const newsGrid = document.getElementById('news-' + topicId);
+          if (newsGrid && news.length > 0) {
+            newsGrid.innerHTML = news.map(n => 
+              '<article class="news-card">' +
+                '<a href="' + n.url + '" target="_blank" rel="noopener">' + n.title + '</a>' +
+                '<p>' + (n.description || '') + '</p>' +
+              '</article>'
+            ).join('');
+          } else if (newsGrid) {
+            newsGrid.innerHTML = '<p class="center">No hay noticias aún.</p>';
+          }
+          
+          const coursesRes = await fetch('/api/topics/${topic.slug}/courses');
+          const courses = await coursesRes.json();
+          const coursesSection = document.getElementById('courses-' + topicId);
+          if (coursesSection && courses.length > 0) {
+            const coursesGrid = coursesSection.querySelector('.courses-grid');
+            if (coursesGrid) {
+              coursesGrid.innerHTML = courses.map(c => 
+                '<article class="course-card">' +
+                  '<a href="' + c.url + '" target="_blank" rel="noopener">' + c.title + '</a>' +
+                  '<p>' + (c.description || '') + '</p>' +
+                '</article>'
+              ).join('');
+            }
+          } else if (coursesSection) {
+            const coursesGrid = coursesSection.querySelector('.courses-grid');
+            if (coursesGrid) {
+              coursesGrid.innerHTML = '<p class="center">No hay cursos aún.</p>';
+            }
+          }
+        } catch (error) {
+          console.error('Error cargando contenido:', error);
+        }
+      })();
+    </script>
+  </body>
+</html>`;
+  
+  res.send(html);
 });
-app.get('/phishing', (req, res) => {
-  res.sendFile(path.join(__dirname, 'phishing.html'));
-});
-app.get('/ava', (req, res) => {
-  res.sendFile(path.join(__dirname, 'ava.html'));
-});
-app.get('/login.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
-});
-// Slide and video pages
+app.get('/phishing', (req, res) => res.sendFile(path.join(__dirname, 'phishing.html')));
+app.get('/ava', (req, res) => res.sendFile(path.join(__dirname, 'ava.html')));
+app.get('/login.html', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 app.get('/slide-seguridad-fisica.html', (req, res) => res.sendFile(path.join(__dirname, 'slide-seguridad-fisica.html')));
 app.get('/slide-servicios-externos.html', (req, res) => res.sendFile(path.join(__dirname, 'slide-servicios-externos.html')));
 app.get('/slide-links-archivos.html', (req, res) => res.sendFile(path.join(__dirname, 'slide-links-archivos.html')));
@@ -172,5 +497,3 @@ app.get('/contacto.html', (req, res) => res.sendFile(path.join(__dirname, 'conta
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
-
-

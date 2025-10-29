@@ -54,10 +54,13 @@
     }catch{}
   }
 
+  let currentUser = null;
+  
   async function checkSessionUI(){
     try{
       const r = await fetch('/api/me');
       const d = await r.json();
+      currentUser = d;
       if (d.authenticated){
         if (btnLogin) btnLogin.style.display='none';
         if (btnLogout) btnLogout.style.display='inline-flex';
@@ -66,6 +69,25 @@
         const ctaStartBtn = document.getElementById('cta-start');
         if (ctaStartBtn) ctaStartBtn.style.display='none';
         if (btnUser){ btnUser.style.display='inline-flex'; btnUser.textContent = d.username || d.email; }
+        
+        // Mostrar botones de admin si es necesario
+        if (d.role && (d.role === 'admin' || d.role === 'theme_editor' || d.role === 'news_editor' || d.role === 'course_editor')) {
+          let adminBtn = document.getElementById('btn-admin');
+          if (!adminBtn) {
+            // Crear botón si no existe
+            const navActions = document.querySelector('.nav-actions');
+            if (navActions) {
+              adminBtn = document.createElement('a');
+              adminBtn.id = 'btn-admin';
+              adminBtn.className = 'btn btn-primary';
+              adminBtn.href = '/admin';
+              adminBtn.textContent = 'Administración';
+              navActions.insertBefore(adminBtn, navActions.firstChild);
+            }
+          } else {
+            adminBtn.style.display = 'inline-flex';
+          }
+        }
       } else {
         if (btnLogin) btnLogin.style.display='inline-flex';
         if (btnLogout) btnLogout.style.display='none';
@@ -166,13 +188,19 @@
     const data = Object.fromEntries(new FormData(form).entries());
     const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:data.email, password:data.password }) });
     const j = await res.json();
-    if (res.ok){ window.location.href = '/modulos'; } else { setMsg(j.error||'Error'); }
+    if (res.ok){ 
+      console.log('Login exitoso. Rol:', j.role);
+      window.location.href = '/temas'; 
+    } else { setMsg(j.error||'Error'); }
   });
   if (btnRegister){ btnRegister.addEventListener('click', async () => {
     const data = Object.fromEntries(new FormData(form).entries());
     if (!data.username){ return setMsg('Ingresa un usuario para registrarte'); }
     const res = await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:data.email, username:data.username, password:data.password }) });
     const j = await res.json();
-    if (res.ok){ window.location.href = '/modulos'; } else { setMsg(j.error||'Error'); }
+    if (res.ok){ 
+      console.log('Registro exitoso. Rol:', j.role);
+      window.location.href = '/temas'; 
+    } else { setMsg(j.error||'Error'); }
   }); }
 })();

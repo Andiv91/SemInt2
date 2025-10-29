@@ -5,7 +5,130 @@
       "email": "andiv0901@gmail.com",
       "username": "AngelD9",
       "passwordHash": "d57e01b762b354e879a2919abea30265ec99110c674cd0eca23119270e2c8165f46a85d5b02b6120eb0968762052eda7d439b9884ea50289139bc4bbc9f51690",
-      "salt": "e32e3bf5dd1d5c3098d74ecbed8fe577"
+      "salt": "e32e3bf5dd1d5c3098d74ecbed8fe577",
+      "role": "admin",
+      "notifications": {
+        "enabled": true,
+        "topics": [],
+        "settings": {
+          "news": true,
+          "courses": true,
+          "updates": true
+        }
+      },
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "topics": [
+    {
+      "id": "seguridad-fisica-id",
+      "slug": "seguridad-fisica",
+      "title": "Seguridad Física",
+      "description": "Aprende a proteger tus activos físicos con las mejores prácticas de seguridad.",
+      "logo": "💾",
+      "videoUrl": "FGNGRvKr6oE",
+      "items": [
+        {
+          "type": "video",
+          "url": "FGNGRvKr6oE",
+          "title": "Video de Seguridad Física"
+        }
+      ],
+      "createdBy": "system",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "servicios-externos-id",
+      "slug": "servicios-externos",
+      "title": "Servicios Externos",
+      "description": "Evalúa y protege tus servicios de terceros y reduce riesgos operativos.",
+      "logo": "📡",
+      "videoUrl": "lCmazsF3LDg",
+      "items": [],
+      "createdBy": "system",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "links-archivos-id",
+      "slug": "links-archivos",
+      "title": "Links y Archivos",
+      "description": "Organiza y accede a la información de forma eficiente y segura.",
+      "logo": "🔗",
+      "videoUrl": "TlB-vGW-xLQ",
+      "items": [],
+      "createdBy": "system",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "servidores-id",
+      "slug": "servidores",
+      "title": "Servidores",
+      "description": "Comprende y administra servidores con buenas prácticas de seguridad.",
+      "logo": "🖥️",
+      "items": [],
+      "createdBy": "system",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "general-id",
+      "slug": "general",
+      "title": "General",
+      "description": "Fundamentos esenciales para navegar y operar de forma segura.",
+      "logo": "⚙️",
+      "items": [],
+      "createdBy": "system",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "phishing-id",
+      "slug": "phishing",
+      "title": "Phishing",
+      "description": "Identifica y defiende tu información ante ataques de phishing.",
+      "logo": "🛡️",
+      "videoUrl": "UuuAlP7ay6U",
+      "items": [],
+      "createdBy": "system",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "b036d4a2-443a-4cfd-b941-c69ae144261f",
+      "slug": "tema-27-10",
+      "title": "Prueba final",
+      "description": "Esta es una prueba final con toda la info",
+      "logo": "",
+      "videoUrl": "https://www.youtube.com/watch?v=PhwCM13n67Y",
+      "items": [],
+      "createdBy": "481c4b93-4968-4ccd-b846-f5003bc1dcbf",
+      "createdAt": "2025-10-27T14:23:29.902Z",
+      "updatedAt": "2025-10-27T14:23:29.902Z"
+    }
+  ],
+  "news": [
+    {
+      "id": "4e1532ee-b1f7-4356-92ae-e74ddafee1e4",
+      "topicId": "b036d4a2-443a-4cfd-b941-c69ae144261f",
+      "title": "Noticias Caracol",
+      "url": "https://www.noticiascaracol.com/",
+      "description": "Prueba",
+      "addedBy": "481c4b93-4968-4ccd-b846-f5003bc1dcbf",
+      "addedAt": "2025-10-27T14:24:38.136Z"
+    }
+  ],
+  "courses": [
+    {
+      "id": "5b977355-c747-4896-bea9-6f62b4201623",
+      "topicId": "b036d4a2-443a-4cfd-b941-c69ae144261f",
+      "title": "Curso test",
+      "url": "https://www.udemy.com/es/?srsltid=AfmBOoril6xYJZEK_TzBUVN5iviHDuk4eAce4hnlotZgcjtCn9FYqOf0",
+      "description": "Prueba de creación de cursos",
+      "addedBy": "481c4b93-4968-4ccd-b846-f5003bc1dcbf",
+      "addedAt": "2025-10-27T14:45:44.778Z"
     }
   ]
 }

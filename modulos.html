@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Módulos — CSECV</title>
+    <title>Temas — CSECV</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -19,7 +19,7 @@
         <nav class="main-nav" aria-label="Principal">
           <ul>
             <li><a href="/">Home</a></li>
-            <li><a class="active" href="/modulos">Módulos</a></li>
+            <li><a class="active" href="/temas">Temas</a></li>
             <li><a href="#sobre">Sobre Nosotros</a></li>
             <li><a href="#contacto">Contacto</a></li>
           </ul>
@@ -37,45 +37,47 @@
     <main class="container">
       <section class="modules-header">
         <h1>Bienvenido de vuelta</h1>
-        <p class="lead center">¿Qué módulo quieres fortalecer hoy?</p>
+        <p class="lead center">¿Qué tema quieres fortalecer hoy?</p>
       </section>
 
-      <section class="modules-grid">
-        <a class="module-card" href="/slide-seguridad-fisica.html">
-          <div class="module-icon">💾</div>
-          <h3>Seguridad física</h3>
-          <p>Aprende a proteger tus activos y espacios con las mejores prácticas.</p>
-        </a>
-        <a class="module-card" href="/slide-servicios-externos.html">
-          <div class="module-icon">📡</div>
-          <h3>Servicios externos</h3>
-          <p>Protege tus servicios de terceros y reduce riesgos operativos.</p>
-        </a>
-        <a class="module-card" href="/slide-links-archivos.html">
-          <div class="module-icon">🔗</div>
-          <h3>Links y Archivos</h3>
-          <p>Organiza y accede a la información de forma eficiente y segura.</p>
-        </a>
-        <a class="module-card" href="/slide-servidores.html">
-          <div class="module-icon">🖥️</div>
-          <h3>Servidores</h3>
-          <p>Comprende y administra servidores con buenas prácticas.</p>
-        </a>
-        <a class="module-card" href="/slide-general.html">
-          <div class="module-icon">⚙️</div>
-          <h3>General</h3>
-          <p>Fundamentos esenciales para navegar y operar de forma segura.</p>
-        </a>
-        <a class="module-card" href="/phishing">
-          <div class="module-icon">🛡️</div>
-          <h3>Phishing</h3>
-          <p>Identifica y defiende tu información ante ataques de phishing.</p>
-        </a>
+      <section class="modules-grid" id="modulesGrid">
+        <!-- Los módulos se cargarán dinámicamente desde la API -->
       </section>
     </main>
 
     <script src="app.js"></script>
+    <script>
+      // Cargar temas desde API
+      async function loadTopics() {
+        try {
+          const res = await fetch('/api/topics');
+          const topics = await res.json();
+          const grid = document.getElementById('modulesGrid');
+          
+          if (!grid || topics.length === 0) {
+            grid.innerHTML = '<p class="center">No hay temas disponibles aún.</p>';
+            return;
+          }
+          
+          grid.innerHTML = topics.map(topic => `
+            <a class="module-card" href="/slide-${topic.slug}.html">
+              <div class="module-icon">${topic.logo || '📚'}</div>
+              <h3>${topic.title}</h3>
+              <p>${topic.description || ''}</p>
+            </a>
+          `).join('');
+        } catch (error) {
+          console.error('Error cargando temas:', error);
+          document.getElementById('modulesGrid').innerHTML = '<p class="center">Error cargando temas.</p>';
+        }
+      }
+      
+      // Cargar cuando la página esté lista
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadTopics);
+      } else {
+        loadTopics();
+      }
+    </script>
   </body>
   </html>
-
-
