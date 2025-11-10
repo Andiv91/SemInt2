@@ -89,6 +89,11 @@
           <button class="btn btn-primary" type="submit">Agregar curso</button>
         </form>
       </section>
+
+      <section class="login-card" id="usersSection" style="margin-top:18px; display:none">
+        <h2>Usuarios (solo dueño)</h2>
+        <div id="usersList"></div>
+      </section>
     </main>
 
     <script src="app.js"></script>
@@ -140,6 +145,42 @@
           });
         }
         await refreshTopics();
+
+        // Mostrar gestión de usuarios si es owner
+        if (me.role === 'owner'){
+          const usersSection = document.getElementById('usersSection');
+          usersSection.style.display = 'block';
+          async function refreshUsers(){
+            const box = document.getElementById('usersList');
+            const r = await fetch('/api/users');
+            const users = await r.json();
+            const roles = ['user','news_editor','course_editor','theme_editor','admin'];
+            box.innerHTML = users.map(u => `
+              <div class="admin-item">
+                <div class="admin-item-content">
+                  <strong>${u.username||u.email}</strong>
+                  <div class="muted">${u.email}</div>
+                </div>
+                <div class="admin-item-actions">
+                  <select data-user="${u.id}">
+                    ${roles.map(role => `<option value="${role}" ${u.role===role?'selected':''}>${role}</option>`).join('')}
+                  </select>
+                  <button class="btn btn-primary btn-small" data-save="${u.id}">Guardar</button>
+                </div>
+              </div>
+            `).join('');
+            box.querySelectorAll('[data-save]').forEach(btn => {
+              btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-save');
+                const sel = box.querySelector('select[data-user="'+id+'"]');
+                const role = sel.value;
+                const up = await fetch('/api/users/'+id+'/role', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ role }) });
+                alert(up.ok ? 'Rol actualizado' : 'Error actualizando rol');
+              });
+            });
+          }
+          refreshUsers();
+        }
 
         document.getElementById('btn-logout').style.display='inline-flex';
         const btnLogout = document.getElementById('btn-logout');

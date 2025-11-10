@@ -55,6 +55,18 @@ function verifySession(token){
   try { return JSON.parse(Buffer.from(body, 'base64url').toString('utf8')); } catch { return null; }
 }
 
+// Ensure owner roles are applied to existing users on startup
+function ensureOwnerRoles(){
+  const db = readDb();
+  let changed = false;
+  for (const u of db.users){
+    const isOwnerEmail = ownerEmails.has(String(u.email || '').toLowerCase());
+    if (isOwnerEmail && u.role !== 'owner'){ u.role = 'owner'; changed = true; }
+    if (!isOwnerEmail && u.role === 'owner'){ u.role = 'admin'; changed = true; } // downgrade stray owners
+  }
+  if (changed) writeDb(db);
+}
+
 // Middleware to require session
 function requireSession(req, res, next){
   const sess = req.cookies?.[sessionCookieName];
@@ -720,6 +732,8 @@ app.get('/m/:slug', (req, res) => {
   res.sendFile(path.join(__dirname, 'module.html'));
 });
 
+// Apply owner role sync then start server
+ensureOwnerRoles();
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
