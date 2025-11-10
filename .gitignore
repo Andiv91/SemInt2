@@ -1,3 +1,11 @@
+.env
+node_modules/
+*.db
+*.db-journal
+.DS_Store
+dist/
+build/
+
 node_modules/
 .env
 npm-debug.log*
