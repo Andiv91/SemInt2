@@ -58,13 +58,16 @@
             return;
           }
           
-          grid.innerHTML = topics.map(topic => `
-            <a class="module-card" href="/m/${topic.slug}">
-              <div class="module-icon">📚</div>
-              <h3>${topic.title}</h3>
-              <p>${topic.description || ''}</p>
-            </a>
-          `).join('');
+          grid.innerHTML = topics.map(topic => {
+            const img = topic.imageAssetId ? ('/assets/' + topic.imageAssetId) : (topic.imagePath || '');
+            return `
+              <a class="module-card" href="/m/${topic.slug}">
+                ${img ? `<img src="${img}" alt="${topic.title}" style="width:64px;height:64px;border-radius:16px;object-fit:cover;border:1px solid rgba(255,255,255,.12)" />` : `<div class="module-icon">📚</div>`}
+                <h3>${topic.title}</h3>
+                <p>${topic.description || ''}</p>
+              </a>
+            `;
+          }).join('');
         } catch (error) {
           console.error('Error cargando temas:', error);
           document.getElementById('modulesGrid').innerHTML = '<p class="center">Error cargando temas.</p>';

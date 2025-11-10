@@ -140,6 +140,8 @@ async function main(){
   );
 }
 
-main().then(()=>prisma.$disconnect()).catch(async (e)=>{ console.error(e); await prisma.$disconnect(); process.exit(1); });
+module.exports = { run: main };
 
-
+if (require.main === module){
+  main().then(()=>prisma.$disconnect()).catch(async (e)=>{ console.error(e); await prisma.$disconnect(); process.exit(1); });
+}

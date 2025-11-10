@@ -93,4 +93,23 @@ model QuizOption {
   correct    Boolean @default(false)
 }
 
+model NotificationSetting {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  enabled   Boolean  @default(true)
+  news      Boolean  @default(true)
+  courses   Boolean  @default(true)
+  updates   Boolean  @default(true)
+}
+
+model TopicSubscription {
+  id        String @id @default(uuid())
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  topic     Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topicId   String
+  @@unique([userId, topicId])
+}
+
 

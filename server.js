@@ -67,6 +67,20 @@ function ensureOwnerRoles(){
   if (changed) writeDb(db);
 }
 
+async function ensureSeedOnBoot(){
+  try {
+    const count = await prisma.topic.count();
+    if (count === 0){
+      const seed = require(path.join(__dirname, 'prisma', 'seed.js'));
+      if (seed && typeof seed.run === 'function'){
+        await seed.run();
+        console.log('Seed completed on empty database.');
+      }
+    }
+  } catch (e) {
+    console.warn('Seed check failed:', e?.message || e);
+  }
+}
 // Middleware to require session
 function requireSession(req, res, next){
   const sess = req.cookies?.[sessionCookieName];
@@ -346,40 +360,55 @@ app.delete('/api/courses/:id', requireSession, hasRole('admin'), (req, res) => {
 });
 
 // ===== NOTIFICATIONS =====
-app.get('/api/notifications', requireSession, (req, res) => {
-  const db = readDb();
-  const user = db.users.find(u => u.id === req.user.userId);
-  if (!user) return res.status(404).json({ error: 'user_not_found' });
-  res.json(user.notifications || { enabled: false, topics: [], settings: {} });
+app.get('/api/notifications', requireSession, async (req, res) => {
+  try {
+    let settings = await prisma.notificationSetting.findUnique({ where: { userId: req.user.userId } });
+    if (!settings) {
+      settings = await prisma.notificationSetting.create({ data: { userId: req.user.userId } });
+    }
+    const subs = await prisma.topicSubscription.findMany({ where: { userId: req.user.userId }, select: { topicId: true } });
+    res.json({ settings, subscriptions: subs.map(s => s.topicId) });
+  } catch {
+    res.status(500).json({ error: 'notifications_failed' });
+  }
 });
 
-app.post('/api/notifications/subscribe', requireSession, (req, res) => {
-  const { topicId } = req.body || {};
-  if (!topicId) return res.status(400).json({ error: 'missing_topic_id' });
-  const db = readDb();
-  const user = db.users.find(u => u.id === req.user.userId);
-  if (!user) return res.status(404).json({ error: 'user_not_found' });
-  if (!user.notifications) {
-    user.notifications = { enabled: true, topics: [], settings: { news: true, courses: true, updates: true } };
+app.post('/api/notifications/subscribe', requireSession, async (req, res) => {
+  const { topicId, topicSlug } = req.body || {};
+  try {
+    let resolvedTopicId = topicId;
+    if (!resolvedTopicId && topicSlug) {
+      const topic = await prisma.topic.findUnique({ where: { slug: topicSlug } });
+      if (!topic) return res.status(404).json({ error: 'topic_not_found' });
+      resolvedTopicId = topic.id;
+    }
+    if (!resolvedTopicId) return res.status(400).json({ error: 'missing_topic' });
+    await prisma.topicSubscription.upsert({
+      where: { userId_topicId: { userId: req.user.userId, topicId: resolvedTopicId } },
+      update: {},
+      create: { userId: req.user.userId, topicId: resolvedTopicId }
+    });
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'subscribe_failed' });
   }
-  if (!user.notifications.topics.includes(topicId)) {
-    user.notifications.topics.push(topicId);
-  }
-  writeDb(db);
-  res.json({ ok: true, notifications: user.notifications });
 });
 
-app.post('/api/notifications/unsubscribe', requireSession, (req, res) => {
-  const { topicId } = req.body || {};
-  if (!topicId) return res.status(400).json({ error: 'missing_topic_id' });
-  const db = readDb();
-  const user = db.users.find(u => u.id === req.user.userId);
-  if (!user) return res.status(404).json({ error: 'user_not_found' });
-  if (user.notifications && user.notifications.topics) {
-    user.notifications.topics = user.notifications.topics.filter(t => t !== topicId);
+app.post('/api/notifications/unsubscribe', requireSession, async (req, res) => {
+  const { topicId, topicSlug } = req.body || {};
+  try {
+    let resolvedTopicId = topicId;
+    if (!resolvedTopicId && topicSlug) {
+      const topic = await prisma.topic.findUnique({ where: { slug: topicSlug } });
+      if (!topic) return res.status(404).json({ error: 'topic_not_found' });
+      resolvedTopicId = topic.id;
+    }
+    if (!resolvedTopicId) return res.status(400).json({ error: 'missing_topic' });
+    await prisma.topicSubscription.deleteMany({ where: { userId: req.user.userId, topicId: resolvedTopicId } });
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'unsubscribe_failed' });
   }
-  writeDb(db);
-  res.json({ ok: true, notifications: user.notifications });
 });
 
 // ===== PRISMA v2 API (DB-backed content) =====
@@ -632,120 +661,24 @@ app.put('/api/users/:id/role', requireSession, hasRole('owner'), async (req, res
   }
 });
 
+// Owner-only: force seed
+app.post('/api/admin/seed', requireSession, hasRole('owner'), async (req, res) => {
+  try {
+    const seed = require(path.join(__dirname, 'prisma', 'seed.js'));
+    if (seed && typeof seed.run === 'function'){
+      await seed.run();
+      return res.json({ ok:true });
+    }
+    res.status(500).json({ error: 'seed_not_available' });
+  } catch (e) {
+    res.status(500).json({ error: 'seed_failed' });
+  }
+});
 // ===== STATIC ROUTES =====
 app.get('/temas', (req, res) => res.sendFile(path.join(__dirname, 'modulos.html')));
 app.get('/modulos', (req, res) => res.sendFile(path.join(__dirname, 'modulos.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 
-// Ruta dinámica para temas (reemplaza los slide-*.html estáticos)
-app.get('/slide-:slug.html', (req, res) => {
-  const db = readDb();
-  const topic = db.topics.find(t => t.slug === req.params.slug);
-  if (!topic) return res.status(404).send('Tema no encontrado');
-  
-  // Generar HTML dinámico basado en el tema
-  const html = `<!doctype html>
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${topic.title} — CSECV</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <header class="site-header">
-      <div class="container nav">
-        <a href="/" class="brand"><span class="brand-dot"></span>CSECV</a>
-        <nav class="main-nav"><ul><li><a href="/temas">Temas</a></li></ul></nav>
-        <div class="nav-actions">
-          <button class="btn btn-text" id="btn-login">Iniciar Sesión</button>
-          <button class="btn btn-ghost" id="btn-logout" style="display:none">Salir</button>
-          <button class="btn btn-ghost" id="btn-user" style="display:none"></button>
-        </div>
-      </div>
-    </header>
-    <main>
-      <section class="container phishing-hero">
-        <figure class="media">
-          <img src="https://images.unsplash.com/photo-1555255707-c07966088b7b?q=80&w=1600&auto=format&fit=crop" alt="${topic.title}" />
-        </figure>
-        <div class="copy">
-          <h1>${topic.title}</h1>
-          <p class="lead">${topic.description}</p>
-          ${topic.videoUrl ? `<div class="module-video">
-            <div class="player-card yt-frame">
-              <iframe src="https://www.youtube.com/embed/${topic.videoUrl}" allowfullscreen title="${topic.title}" loading="lazy"></iframe>
-            </div>
-          </div>` : ''}
-        </div>
-      </section>
-
-      <section class="container module-news">
-        <div class="quiz-header"><h2>Noticias relacionadas</h2></div>
-        <div class="news-grid" id="news-${topic.id}">
-          <p>Cargando noticias...</p>
-        </div>
-      </section>
-
-      <section class="container module-courses" id="courses-${topic.id}">
-        <h2>Cursos relacionados</h2>
-        <div class="courses-grid">
-          <p>Cargando cursos...</p>
-        </div>
-      </section>
-    </main>
-    <script src="/app.js"></script>
-    <script>
-      // Cargar noticias y cursos dinámicamente
-      (async function() {
-        const topicId = '${topic.id}';
-        try {
-          const newsRes = await fetch('/api/topics/${topic.slug}/news');
-          const news = await newsRes.json();
-          const newsGrid = document.getElementById('news-' + topicId);
-          if (newsGrid && news.length > 0) {
-            newsGrid.innerHTML = news.map(n => 
-              '<article class="news-card">' +
-                '<a href="' + n.url + '" target="_blank" rel="noopener">' + n.title + '</a>' +
-                '<p>' + (n.description || '') + '</p>' +
-              '</article>'
-            ).join('');
-          } else if (newsGrid) {
-            newsGrid.innerHTML = '<p class="center">No hay noticias aún.</p>';
-          }
-          
-          const coursesRes = await fetch('/api/topics/${topic.slug}/courses');
-          const courses = await coursesRes.json();
-          const coursesSection = document.getElementById('courses-' + topicId);
-          if (coursesSection && courses.length > 0) {
-            const coursesGrid = coursesSection.querySelector('.courses-grid');
-            if (coursesGrid) {
-              coursesGrid.innerHTML = courses.map(c => 
-                '<article class="course-card">' +
-                  '<a href="' + c.url + '" target="_blank" rel="noopener">' + c.title + '</a>' +
-                  '<p>' + (c.description || '') + '</p>' +
-                '</article>'
-              ).join('');
-            }
-          } else if (coursesSection) {
-            const coursesGrid = coursesSection.querySelector('.courses-grid');
-            if (coursesGrid) {
-              coursesGrid.innerHTML = '<p class="center">No hay cursos aún.</p>';
-            }
-          }
-        } catch (error) {
-          console.error('Error cargando contenido:', error);
-        }
-      })();
-    </script>
-  </body>
-</html>`;
-  
-  res.send(html);
-});
 app.get('/phishing', (req, res) => res.sendFile(path.join(__dirname, 'phishing.html')));
 app.get('/ava', (req, res) => res.sendFile(path.join(__dirname, 'ava.html')));
 app.get('/login.html', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
@@ -769,6 +702,8 @@ app.get('/m/:slug', (req, res) => {
 
 // Apply owner role sync then start server
 ensureOwnerRoles();
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+ensureSeedOnBoot().finally(() => {
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
 });
