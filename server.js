@@ -85,7 +85,8 @@ function hasRole(requiredRole) {
     const db = readDb();
     const user = db.users.find(u => u.id === req.user.userId);
     if (!user) return res.status(404).json({ error: 'user_not_found' });
-    const userRole = roleHierarchy[user.role] || 0;
+    const isOwner = ownerEmails.has(String(user.email || '').toLowerCase());
+    const userRole = isOwner ? roleHierarchy['owner'] : (roleHierarchy[user.role] || 0);
     const required = roleHierarchy[requiredRole] || 0;
     if (userRole < required) return res.status(403).json({ error: 'insufficient_permissions' });
     next();
@@ -100,7 +101,9 @@ app.get('/api/me', (req, res) => {
   const db = readDb();
   const user = db.users.find(u => u.id === data.userId);
   if (!user) return res.json({ authenticated: false });
-  return res.json({ authenticated: true, email: user.email, username: user.username, userId: user.id, role: user.role });
+  const isOwner = ownerEmails.has(String(user.email || '').toLowerCase());
+  const role = isOwner ? 'owner' : user.role;
+  return res.json({ authenticated: true, email: user.email, username: user.username, userId: user.id, role });
 });
 
 // ===== AUTH =====
