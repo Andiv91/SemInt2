@@ -1,0 +1,96 @@
+// Prisma schema for CSECV
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String @id @default(uuid())
+  email        String @unique
+  username     String
+  passwordHash String
+  salt         String
+  role         String @default("USER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Topic {
+  id          String  @id @default(uuid())
+  slug        String  @unique
+  title       String
+  description String
+  imagePath   String
+  imageAsset  Asset? @relation(fields: [imageAssetId], references: [id])
+  imageAssetId String?
+  videos      Video[]
+  news        News[]
+  courses     Course[]
+  questions   QuizQuestion[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Asset {
+  id        String  @id @default(uuid())
+  filename  String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+  Topic     Topic[]
+}
+
+model Video {
+  id        String @id @default(uuid())
+  topic     Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topicId   String
+  title     String
+  url       String
+  provider  String
+  order     Int     @default(0)
+  createdAt DateTime @default(now())
+}
+
+model News {
+  id        String @id @default(uuid())
+  topic     Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topicId   String
+  title     String
+  url       String
+  source    String
+  summary   String
+  createdAt DateTime @default(now())
+}
+
+model Course {
+  id        String @id @default(uuid())
+  topic     Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topicId   String
+  title     String
+  url       String
+  provider  String
+  summary   String
+  createdAt DateTime @default(now())
+}
+
+model QuizQuestion {
+  id        String @id @default(uuid())
+  topic     Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topicId   String
+  text      String
+  options   QuizOption[]
+}
+
+model QuizOption {
+  id         String @id @default(uuid())
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId String
+  text       String
+  correct    Boolean @default(false)
+}
+
+

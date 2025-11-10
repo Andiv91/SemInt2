@@ -4,11 +4,15 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const app = express();
 const port = process.env.PORT || 5173;
 const sessionCookieName = 'sess';
 const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-me';
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 app.use(cookieParser());
 app.use(express.json());
@@ -336,6 +340,204 @@ app.post('/api/notifications/unsubscribe', requireSession, (req, res) => {
   res.json({ ok: true, notifications: user.notifications });
 });
 
+// ===== PRISMA v2 API (DB-backed content) =====
+// READ
+app.get('/api/v2/topics', async (req, res) => {
+  try {
+    const topics = await prisma.topic.findMany({
+      orderBy: { title: 'asc' },
+      select: { id: true, slug: true, title: true, description: true, imagePath: true }
+    });
+    res.json(topics);
+  } catch {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+app.get('/api/v2/topics/:slug', async (req, res) => {
+  try {
+    const topic = await prisma.topic.findUnique({
+      where: { slug: req.params.slug },
+      include: {
+        videos: { orderBy: { order: 'asc' } },
+        news: true,
+        courses: true,
+        questions: { include: { options: true } }
+      }
+    });
+    if (!topic) return res.status(404).json({ error: 'not_found' });
+    res.json(topic);
+  } catch {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+// WRITE
+app.post('/api/v2/topics', requireSession, hasRole('theme_editor'), async (req, res) => {
+  const { slug, title, description, imagePath } = req.body || {};
+  if (!slug || !title) return res.status(400).json({ error: 'missing_fields' });
+  try {
+    const created = await prisma.topic.create({ data: { slug, title, description: description || '', imagePath: imagePath || '' } });
+    res.json({ ok: true, topic: created });
+  } catch {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+app.put('/api/v2/topics/:slug', requireSession, hasRole('theme_editor'), async (req, res) => {
+  const { title, description, imagePath } = req.body || {};
+  try {
+    const updated = await prisma.topic.update({ where: { slug: req.params.slug }, data: { title, description, imagePath } });
+    res.json({ ok: true, topic: updated });
+  } catch {
+    res.status(404).json({ error: 'not_found' });
+  }
+});
+app.delete('/api/v2/topics/:slug', requireSession, hasRole('admin'), async (req, res) => {
+  try {
+    await prisma.video.deleteMany({ where: { topic: { slug: req.params.slug } } });
+    await prisma.news.deleteMany({ where: { topic: { slug: req.params.slug } } });
+    await prisma.course.deleteMany({ where: { topic: { slug: req.params.slug } } });
+    await prisma.quizOption.deleteMany({ where: { question: { topic: { slug: req.params.slug } } } });
+    await prisma.quizQuestion.deleteMany({ where: { topic: { slug: req.params.slug } } });
+    await prisma.topic.delete({ where: { slug: req.params.slug } });
+    res.json({ ok: true });
+  } catch {
+    res.status(404).json({ error: 'not_found' });
+  }
+});
+app.post('/api/v2/topics/:slug/video', requireSession, hasRole('theme_editor'), async (req, res) => {
+  const { title, url, provider, order } = req.body || {};
+  try {
+    const topic = await prisma.topic.findUnique({ where: { slug: req.params.slug } });
+    if (!topic) return res.status(404).json({ error: 'not_found' });
+    await prisma.video.deleteMany({ where: { topicId: topic.id } });
+    const v = await prisma.video.create({ data: { topicId: topic.id, title: title || 'Video', url, provider: provider || 'youtube', order: order || 1 } });
+    res.json({ ok: true, video: v });
+  } catch {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+app.post('/api/v2/topics/:slug/news', requireSession, hasRole('news_editor'), async (req, res) => {
+  const { title, url, source, summary } = req.body || {};
+  if (!title || !url) return res.status(400).json({ error: 'missing_fields' });
+  try {
+    const topic = await prisma.topic.findUnique({ where: { slug: req.params.slug } });
+    if (!topic) return res.status(404).json({ error: 'not_found' });
+    const item = await prisma.news.create({ data: { topicId: topic.id, title, url, source: source || '', summary: summary || '' } });
+    res.json({ ok: true, news: item });
+  } catch {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+app.delete('/api/v2/news/:id', requireSession, hasRole('admin'), async (req, res) => {
+  try {
+    await prisma.news.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch {
+    res.status(404).json({ error: 'not_found' });
+  }
+});
+app.post('/api/v2/topics/:slug/courses', requireSession, hasRole('course_editor'), async (req, res) => {
+  const { title, url, provider, summary } = req.body || {};
+  if (!title || !url) return res.status(400).json({ error: 'missing_fields' });
+  try {
+    const topic = await prisma.topic.findUnique({ where: { slug: req.params.slug } });
+    if (!topic) return res.status(404).json({ error: 'not_found' });
+    const c = await prisma.course.create({ data: { topicId: topic.id, title, url, provider: provider || '', summary: summary || '' } });
+    res.json({ ok: true, course: c });
+  } catch {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+app.delete('/api/v2/courses/:id', requireSession, hasRole('admin'), async (req, res) => {
+  try {
+    await prisma.course.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch {
+    res.status(404).json({ error: 'not_found' });
+  }
+});
+app.post('/api/v2/topics/:slug/questions', requireSession, hasRole('theme_editor'), async (req, res) => {
+  const { text, options } = req.body || {};
+  if (!text || !Array.isArray(options) || options.length === 0) return res.status(400).json({ error: 'missing_fields' });
+  try {
+    const topic = await prisma.topic.findUnique({ where: { slug: req.params.slug } });
+    if (!topic) return res.status(404).json({ error: 'not_found' });
+    const q = await prisma.quizQuestion.create({
+      data: { topicId: topic.id, text, options: { create: options.map(o => ({ text: o.text, correct: !!o.correct })) } },
+      include: { options: true }
+    });
+    res.json({ ok: true, question: q });
+  } catch {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+app.delete('/api/v2/questions/:id', requireSession, hasRole('admin'), async (req, res) => {
+  try {
+    await prisma.quizOption.deleteMany({ where: { questionId: req.params.id } });
+    await prisma.quizQuestion.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch {
+    res.status(404).json({ error: 'not_found' });
+  }
+});
+
+// Upload topic image (store as Asset)
+app.post('/api/v2/topics/:slug/image', requireSession, hasRole('theme_editor'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'missing_file' });
+    const topic = await prisma.topic.findUnique({ where: { slug: req.params.slug } });
+    if (!topic) return res.status(404).json({ error: 'not_found' });
+    const asset = await prisma.asset.create({
+      data: { filename: req.file.originalname || 'image', mimeType: req.file.mimetype || 'application/octet-stream', data: req.file.buffer }
+    });
+    await prisma.topic.update({ where: { id: topic.id }, data: { imageAssetId: asset.id } });
+    res.json({ ok: true, assetId: asset.id });
+  } catch {
+    res.status(500).json({ error: 'upload_failed' });
+  }
+});
+
+// Serve asset
+app.get('/assets/:id', async (req, res) => {
+  try {
+    const asset = await prisma.asset.findUnique({ where: { id: req.params.id } });
+    if (!asset) return res.status(404).send('Not found');
+    res.setHeader('Content-Type', asset.mimeType || 'application/octet-stream');
+    res.send(Buffer.from(asset.data));
+  } catch {
+    res.status(404).send('Not found');
+  }
+});
+// ===== PRISMA V2 API (DB-backed) =====
+app.get('/api/v2/topics', async (req, res) => {
+  try {
+    const topics = await prisma.topic.findMany({
+      orderBy: { title: 'asc' },
+      select: { slug: true, title: true, description: true, imagePath: true }
+    });
+    res.json(topics);
+  } catch (e) {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
+app.get('/api/v2/topics/:slug', async (req, res) => {
+  try {
+    const topic = await prisma.topic.findUnique({
+      where: { slug: req.params.slug },
+      include: {
+        videos: { orderBy: { order: 'asc' } },
+        news: true,
+        courses: true,
+        questions: { include: { options: true } }
+      }
+    });
+    if (!topic) return res.status(404).json({ error: 'not_found' });
+    res.json(topic);
+  } catch (e) {
+    res.status(500).json({ error: 'db_error' });
+  }
+});
+
 // ===== PROFILE =====
 app.put('/api/profile', requireSession, (req, res) => {
   const { username } = req.body || {};
@@ -493,6 +695,11 @@ app.get('/video-servidores.html', (req, res) => res.sendFile(path.join(__dirname
 app.get('/video-general.html', (req, res) => res.sendFile(path.join(__dirname, 'video-general.html')));
 app.get('/sobre.html', (req, res) => res.sendFile(path.join(__dirname, 'sobre.html')));
 app.get('/contacto.html', (req, res) => res.sendFile(path.join(__dirname, 'contacto.html')));
+
+// Generic module page
+app.get('/m/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'module.html'));
+});
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

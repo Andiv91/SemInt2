@@ -3,118 +3,202 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Panel de Administración — CSECV</title>
+    <title>Admin — CSECV</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
-    <style>
-      .admin-container { padding: 40px 0; }
-      .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-      .admin-tabs { display: flex; gap: 12px; margin-bottom: 30px; }
-      .admin-tab { padding: 12px 24px; background: var(--card); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; cursor: pointer; color: var(--muted); }
-      .admin-tab.active { background: var(--brand); color: white; }
-      .admin-content { display: none; }
-      .admin-content.active { display: block; }
-      .admin-form { background: var(--card); padding: 24px; border-radius: 12px; margin-bottom: 20px; }
-      .admin-form label { display: block; margin-bottom: 8px; font-weight: 600; }
-      .admin-form input, .admin-form textarea { width: 100%; padding: 12px; background: #120f1b; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; color: var(--text); margin-bottom: 16px; }
-      .admin-list { display: grid; gap: 16px; }
-      .admin-item { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); display: flex; justify-content: space-between; align-items: start; }
-      .admin-item-content { flex: 1; }
-      .admin-item-actions { display: flex; gap: 8px; }
-      .btn-small { padding: 8px 16px; font-size: 14px; }
-      .error { color: #ff6b6b; margin-top: 8px; }
-    </style>
   </head>
   <body>
     <header class="site-header">
       <div class="container nav">
         <a href="/" class="brand"><span class="brand-dot"></span>CSECV</a>
-        <nav class="main-nav"><ul><li><a href="/modulos">Módulos</a></li></ul></nav>
+        <nav class="main-nav" aria-label="Principal">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/modulos">Módulos</a></li>
+          </ul>
+        </nav>
         <div class="nav-actions">
-          <button class="btn btn-ghost" id="btn-logout">Salir</button>
-          <button class="btn btn-ghost" id="btn-user"></button>
+          <button class="btn btn-ghost" id="btn-user" style="display:none"></button>
+          <button class="btn btn-ghost" id="btn-logout" style="display:none">Salir</button>
         </div>
       </div>
     </header>
+    <main class="container" style="padding:24px 0 80px">
+      <h1>Panel de administración</h1>
+      <p class="muted" id="adminMsg">Cargando...</p>
 
-    <main class="container admin-container">
-      <div class="admin-header">
-        <h1>Panel de Administración</h1>
-        <div id="currentUserInfo"></div>
+      <section class="login-card" style="margin-top:18px">
+        <h2>Temas</h2>
+        <form id="topicForm" style="margin-top:8px; display:grid; gap:10px">
+          <div class="row" style="gap:10px; flex-wrap:wrap">
+            <label>Slug <input type="text" name="slug" required /></label>
+            <label>Título <input type="text" name="title" required /></label>
+            <label>Imagen del tema (archivo) <input type="file" name="image" accept="image/*"/></label>
       </div>
-
-      <div class="admin-tabs">
-        <button class="admin-tab active" data-tab="topics">Temas</button>
-        <button class="admin-tab" data-tab="news">Noticias</button>
-        <button class="admin-tab" data-tab="courses">Cursos</button>
+          <label>Descripción <input type="text" name="description" /></label>
+          <div class="row">
+            <button class="btn btn-primary" type="submit">Crear/Actualizar</button>
+            <button class="btn btn-ghost" type="button" id="btnDeleteTopic">Eliminar</button>
       </div>
-
-      <!-- Temas -->
-      <div class="admin-content active" id="content-topics">
-        <div class="admin-form">
-          <h3>Crear Nuevo Tema</h3>
-          <form id="form-new-topic">
-            <label>Slug (URL-amigable) * <input type="text" name="slug" placeholder="seguridad-fisica" required /></label>
-            <label>Título * <input type="text" name="title" placeholder="Seguridad Física" required /></label>
-            <label>Descripción <textarea name="description" rows="3" placeholder="Aprende a proteger tus activos..."></textarea></label>
-            <label>Logo (Emoji) <input type="text" name="logo" placeholder="💾" /></label>
-            <label>Video YouTube ID <input type="text" name="videoUrl" placeholder="FGNGRvKr6oE" /></label>
-            <button class="btn btn-primary" type="submit">Crear Tema</button>
           </form>
-          <p id="error-topics" class="error"></p>
-        </div>
+        <div id="topicsList" style="margin-top:12px"></div>
+      </section>
 
-        <h3>Temas Existentes</h3>
-        <div class="admin-list" id="list-topics">
-          <!-- Se cargará dinámicamente -->
+      <section class="login-card" style="margin-top:18px">
+        <h2>Video del tema</h2>
+        <form id="videoForm" style="display:grid; gap:10px">
+          <div class="row" style="gap:10px; flex-wrap:wrap">
+            <label>Slug <input type="text" name="slug" required /></label>
+            <label>Título <input type="text" name="title" /></label>
+            <label>URL YouTube <input type="text" name="url" placeholder="https://www.youtube.com/watch?v=..." required /></label>
         </div>
-      </div>
-
-      <!-- Noticias -->
-      <div class="admin-content" id="content-news">
-        <div class="admin-form">
-          <h3>Agregar Noticia</h3>
-          <form id="form-new-news">
-            <label>Tema * <select name="topicId" id="select-topic-news" required></select></label>
-            <label>Título * <input type="text" name="title" placeholder="Título de la noticia" required /></label>
-            <label>URL * <input type="url" name="url" placeholder="https://..." required /></label>
-            <label>Descripción <textarea name="description" rows="3" placeholder="Descripción breve..."></textarea></label>
-            <button class="btn btn-primary" type="submit">Agregar Noticia</button>
+          <button class="btn btn-primary" type="submit">Guardar video</button>
           </form>
-          <p id="error-news" class="error"></p>
-        </div>
+      </section>
 
-        <h3>Noticias Existentes</h3>
-        <div class="admin-list" id="list-news">
-          <!-- Se cargará dinámicamente -->
+      <section class="login-card" style="margin-top:18px">
+        <h2>Noticias del tema</h2>
+        <form id="newsForm" style="display:grid; gap:10px">
+          <div class="row" style="gap:10px; flex-wrap:wrap">
+            <label>Slug <input type="text" name="slug" required /></label>
+            <label>Título <input type="text" name="title" required /></label>
+            <label>URL <input type="text" name="url" required /></label>
         </div>
+          <div class="row" style="gap:10px; flex-wrap:wrap">
+            <label>Fuente <input type="text" name="source" /></label>
+            <label>Resumen <input type="text" name="summary" /></label>
       </div>
-
-      <!-- Cursos -->
-      <div class="admin-content" id="content-courses">
-        <div class="admin-form">
-          <h3>Agregar Curso</h3>
-          <form id="form-new-course">
-            <label>Tema * <select name="topicId" id="select-topic-courses" required></select></label>
-            <label>Título * <input type="text" name="title" placeholder="Título del curso" required /></label>
-            <label>URL * <input type="url" name="url" placeholder="https://..." required /></label>
-            <label>Descripción <textarea name="description" rows="3" placeholder="Descripción breve..."></textarea></label>
-            <button class="btn btn-primary" type="submit">Agregar Curso</button>
+          <button class="btn btn-primary" type="submit">Agregar noticia</button>
           </form>
-          <p id="error-courses" class="error"></p>
-        </div>
+      </section>
 
-        <h3>Cursos Existentes</h3>
-        <div class="admin-list" id="list-courses">
-          <!-- Se cargará dinámicamente -->
+      <section class="login-card" style="margin-top:18px">
+        <h2>Cursos del tema</h2>
+        <form id="courseForm" style="display:grid; gap:10px">
+          <div class="row" style="gap:10px; flex-wrap:wrap">
+            <label>Slug <input type="text" name="slug" required /></label>
+            <label>Título <input type="text" name="title" required /></label>
+            <label>URL <input type="text" name="url" required /></label>
         </div>
+          <div class="row" style="gap:10px; flex-wrap:wrap">
+            <label>Proveedor <input type="text" name="provider" /></label>
+            <label>Resumen <input type="text" name="summary" /></label>
       </div>
+          <button class="btn btn-primary" type="submit">Agregar curso</button>
+        </form>
+      </section>
     </main>
 
     <script src="app.js"></script>
-    <script src="admin.js"></script>
+    <script>
+      (async function(){
+        const msg = document.getElementById('adminMsg');
+        const me = await fetch('/api/me').then(r=>r.json()).catch(()=>({authenticated:false}));
+        if (!me.authenticated){ msg.textContent = 'Debes iniciar sesión.'; return; }
+        const allowedRoles = ['admin','theme_editor','news_editor','course_editor'];
+        if (!allowedRoles.includes(me.role)){ msg.textContent = 'No tienes permisos para administrar.'; return; }
+        msg.textContent = 'Autorizado ('+ (me.role || 'user') +').';
+
+        async function refreshTopics(){
+          const list = document.getElementById('topicsList');
+          const res = await fetch('/api/v2/topics');
+          const topics = await res.json();
+          list.innerHTML = topics.map(t => `
+            <div class="admin-item">
+              <div class="admin-item-content">
+                <strong>${t.title}</strong><div class="muted">Slug: ${t.slug}</div>
+                <div class="muted">${t.description||''}</div>
+              </div>
+              <div class="admin-item-actions">
+                <button class="btn btn-ghost btn-small" data-edit="${t.slug}">Editar</button>
+                <button class="btn btn-ghost btn-small" data-del="${t.slug}">Eliminar</button>
+              </div>
+            </div>
+          `).join('');
+
+          list.querySelectorAll('[data-edit]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const slug = btn.getAttribute('data-edit');
+              const r = await fetch('/api/v2/topics/'+encodeURIComponent(slug));
+              if (!r.ok) return; const t = await r.json();
+              topicForm.querySelector('input[name="slug"]').value = t.slug;
+              topicForm.querySelector('input[name="title"]').value = t.title||'';
+              topicForm.querySelector('input[name="description"]').value = t.description||'';
+              topicForm.scrollIntoView({ behavior:'smooth', block:'start' });
+            });
+          });
+          list.querySelectorAll('[data-del]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const slug = btn.getAttribute('data-del');
+              if (!confirm('¿Eliminar tema '+slug+'?')) return;
+              const r = await fetch('/api/v2/topics/'+encodeURIComponent(slug), { method:'DELETE' });
+              if (!r.ok){ alert('Error eliminando'); return; }
+              await refreshTopics();
+            });
+          });
+        }
+        await refreshTopics();
+
+        document.getElementById('btn-logout').style.display='inline-flex';
+        const btnLogout = document.getElementById('btn-logout');
+        if (btnLogout) btnLogout.onclick = async ()=>{ await fetch('/api/logout',{method:'POST'}); location.reload(); };
+
+        const topicForm = document.getElementById('topicForm');
+        const btnDeleteTopic = document.getElementById('btnDeleteTopic');
+        topicForm.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const fd = new FormData(topicForm);
+          const slug = fd.get('slug');
+          const title = fd.get('title');
+          const description = fd.get('description')||'';
+          let res = await fetch('/api/v2/topics/'+encodeURIComponent(slug), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, description }) });
+          if (!res.ok){
+            res = await fetch('/api/v2/topics', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug, title, description }) });
+            if (!res.ok){ alert('Error guardando tema'); return; }
+          }
+          const file = topicForm.querySelector('input[name="image"]').files[0];
+          if (file){
+            const imgFd = new FormData(); imgFd.append('image', file);
+            await fetch('/api/v2/topics/'+encodeURIComponent(slug)+'/image', { method:'POST', body: imgFd });
+          }
+          alert('Tema guardado');
+          refreshTopics();
+        });
+        btnDeleteTopic.addEventListener('click', async ()=>{
+          const slug = topicForm.querySelector('input[name="slug"]').value; if (!slug) return;
+          if (!confirm('¿Eliminar tema '+slug+'?')) return;
+          const res = await fetch('/api/v2/topics/'+encodeURIComponent(slug), { method:'DELETE' });
+          alert(res.ok ? 'Tema eliminado' : 'Error eliminando');
+          refreshTopics();
+        });
+
+        const videoForm = document.getElementById('videoForm');
+        videoForm.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const data = Object.fromEntries(new FormData(videoForm).entries());
+          const res = await fetch('/api/v2/topics/'+encodeURIComponent(data.slug)+'/video', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url }) });
+          alert(res.ok ? 'Video actualizado' : 'Error guardando video');
+        });
+
+        const newsForm = document.getElementById('newsForm');
+        newsForm.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const data = Object.fromEntries(new FormData(newsForm).entries());
+          const res = await fetch('/api/v2/topics/'+encodeURIComponent(data.slug)+'/news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url, source:data.source, summary:data.summary }) });
+          alert(res.ok ? 'Noticia agregada' : 'Error guardando noticia');
+        });
+
+        const courseForm = document.getElementById('courseForm');
+        courseForm.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const data = Object.fromEntries(new FormData(courseForm).entries());
+          const res = await fetch('/api/v2/topics/'+encodeURIComponent(data.slug)+'/courses', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url, provider:data.provider, summary:data.summary }) });
+          alert(res.ok ? 'Curso agregado' : 'Error guardando curso');
+        });
+      })();
+    </script>
   </body>
   </html>
 

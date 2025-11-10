@@ -50,7 +50,7 @@
       // Cargar temas desde API
       async function loadTopics() {
         try {
-          const res = await fetch('/api/topics');
+          const res = await fetch('/api/v2/topics');
           const topics = await res.json();
           const grid = document.getElementById('modulesGrid');
           
@@ -60,8 +60,8 @@
           }
           
           grid.innerHTML = topics.map(topic => `
-            <a class="module-card" href="/slide-${topic.slug}.html">
-              <div class="module-icon">${topic.logo || '📚'}</div>
+            <a class="module-card" href="/m/${topic.slug}">
+              <div class="module-icon">📚</div>
               <h3>${topic.title}</h3>
               <p>${topic.description || ''}</p>
             </a>

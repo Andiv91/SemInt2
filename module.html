@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tema — CSECV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand"><span class="brand-dot"></span>CSECV</a>
+        <nav class="main-nav" aria-label="Principal">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/modulos">Módulos</a></li>
+            <li><a href="/sobre.html">Sobre Nosotros</a></li>
+            <li><a href="/contacto.html">Contacto</a></li>
+          </ul>
+        </nav>
+        <div class="nav-actions">
+          <button class="btn btn-text" id="btn-login">Iniciar Sesión</button>
+          <button class="btn btn-ghost" id="btn-logout" style="display:none">Salir</button>
+          <button class="btn btn-ghost" id="btn-user" style="display:none"></button>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">☰</button>
+      </div>
+    </header>
+
+    <main id="moduleRoot">
+      <section class="container phishing-hero">
+        <figure class="media">
+          <img id="topicImage" src="" alt="Tema" />
+        </figure>
+        <div class="copy">
+          <h1 id="topicTitle">Cargando...</h1>
+          <p class="lead" id="topicDesc"></p>
+          <div class="module-video" id="videoContainer" style="display:none">
+            <div class="player-card yt-frame">
+              <iframe id="topicVideo" src="" allowfullscreen title="Video" loading="lazy"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container module-news">
+        <div class="quiz-header"><h2>Noticias relacionadas</h2></div>
+        <div class="news-grid" id="newsGrid">
+          <p>Cargando noticias...</p>
+        </div>
+      </section>
+
+      <section class="container module-courses">
+        <h2>Cursos recomendados</h2>
+        <div class="courses-grid" id="coursesGrid">
+          <p>Cargando cursos...</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+      (async function(){
+        function getSlug(){
+          const parts = location.pathname.split('/');
+          return parts[2] || '';
+        }
+        function toEmbed(url){
+          try{
+            const u = new URL(url);
+            if (u.hostname.includes('youtube.com')){
+              const v = u.searchParams.get('v');
+              if (v) return 'https://www.youtube.com/embed/' + v;
+              // short youtu.be
+            }
+            if (u.hostname === 'youtu.be'){
+              return 'https://www.youtube.com/embed/' + u.pathname.slice(1);
+            }
+            return url;
+          }catch{ return url; }
+        }
+        const slug = getSlug();
+        const res = await fetch('/api/v2/topics/' + slug);
+        if (!res.ok){
+          document.getElementById('moduleRoot').innerHTML = '<div class="container"><p>No se encontró el tema.</p></div>';
+          return;
+        }
+        const t = await res.json();
+        document.title = t.title + ' — CSECV';
+        const img = document.getElementById('topicImage');
+        if (t.imageAssetId){ img.src = '/assets/' + t.imageAssetId; }
+        else { img.src = t.imagePath || ''; }
+        img.alt = t.title;
+        document.getElementById('topicTitle').textContent = t.title;
+        document.getElementById('topicDesc').textContent = t.description || '';
+        if (t.videos && t.videos.length){
+          const v = t.videos[0];
+          const iframe = document.getElementById('topicVideo');
+          iframe.src = toEmbed(v.url);
+          document.getElementById('videoContainer').style.display = 'block';
+          iframe.title = v.title || 'Video';
+        }
+        const newsGrid = document.getElementById('newsGrid');
+        if (t.news && t.news.length){
+          newsGrid.innerHTML = t.news.map(n => (
+            '<article class="news-card"><a href="'+n.url+'" target="_blank" rel="noopener">'+n.title+'</a><p>'+(n.summary||'')+'</p></article>'
+          )).join('');
+        } else {
+          newsGrid.innerHTML = '<p class="center">No hay noticias aún.</p>';
+        }
+        const coursesGrid = document.getElementById('coursesGrid');
+        if (t.courses && t.courses.length){
+          coursesGrid.innerHTML = t.courses.map(c => (
+            '<article class="course-card"><a href="'+c.url+'" target="_blank" rel="noopener">'+c.title+'</a><p>'+(c.summary||'')+'</p></article>'
+          )).join('');
+        } else {
+          coursesGrid.innerHTML = '<p class="center">No hay cursos aún.</p>';
+        }
+      })();
+    </script>
+  </body>
+  </html>
+
+
