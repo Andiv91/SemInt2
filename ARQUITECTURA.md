@@ -480,7 +480,7 @@ app.put('/api/password', requireSession, (req, res) => {
 **21 archivos HTML:**
 - `index.html` - Página principal
 - `login.html` - Login/registro
-- `modulos.html` - Catálogo de módulos
+- `modulos.html` - Catálogo de temas
 - `phishing.html` - Módulo phishing
 - `slide-seguridad-fisica.html` - Módulo con quiz
 - `slide-servicios-externos.html`
@@ -621,7 +621,7 @@ loginForm.addEventListener('submit', async (e) => {
   const j = await res.json();
   
   if (res.ok) {
-    window.location.href = '/modulos';  // Redirigir
+    window.location.href = '/temas';  // Redirigir
   } else {
     setMsg(j.error || 'Error');
   }
@@ -761,7 +761,7 @@ Cada módulo tiene enlaces a:
    ↓
 8. Backend: Envía cookie al navegador
    ↓
-9. Frontend: Redirige a /modulos
+9. Frontend: Redirige a /temas
 ```
 
 ### 6.2 Flujo de Login
@@ -777,7 +777,7 @@ Cada módulo tiene enlaces a:
    ↓
 5. Si correcto: Crea sesión + cookie
    ↓
-6. Frontend: Redirige a /modulos
+6. Frontend: Redirige a /temas
 ```
 
 ### 6.3 Flujo de Acceso Protegido
@@ -848,7 +848,7 @@ Cada módulo tiene enlaces a:
 ### 7.3 ¿Qué hace el sistema?
 
 1. **Registro y login** de usuarios
-2. **Módulos educativos** con videos y contenido
+2. **Temas educativos** con videos y contenido
 3. **Quizzes interactivos** con feedback
 4. **Enlaces externos** a noticias y cursos
 5. **Gestión de perfiles** (cambiar username/password)

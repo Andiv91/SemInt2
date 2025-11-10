@@ -106,16 +106,17 @@ body{
 .login-card .row{display:flex; gap:12px; align-items:center}
 
 /* Pages: Modulos */
-.modules-header{padding:40px 0 10px}
-.modules-header h1{text-align:center; font-size:48px; margin:0}
-.modules-header .center{text-align:center}
+.modules-header, .temas-header{padding:40px 0 10px}
+.modules-header h1, .temas-header h1{text-align:center; font-size:48px; margin:0}
+.modules-header .center, .temas-header .center{text-align:center}
+.temas-subtitle{text-align:center}
 .copy{text-align:center}
-.modules-grid{display:grid; grid-template-columns: repeat(3, 1fr); gap:28px; padding:20px 0 60px}
-.module-card{background:#1c1a22; color:#fff; text-decoration:none; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:26px; display:grid; gap:10px; justify-items:center; text-align:center; box-shadow:0 10px 24px rgba(0,0,0,.3)}
-.module-card:hover{border-color:rgba(124,77,255,.6)}
-.module-card .module-icon{width:64px; height:64px; border-radius:16px; background:#2a2536; display:grid; place-items:center; font-size:28px; color:#b794ff}
-.module-card h3{margin:6px 0 6px}
-.module-card p{color:#c9c5d6; margin:0}
+.modules-grid, .temas-grid{display:grid; grid-template-columns: repeat(3, 1fr); gap:28px; padding:20px 0 60px}
+.module-card, .tema-card{background:#1c1a22; color:#fff; text-decoration:none; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:26px; display:grid; gap:10px; justify-items:center; text-align:center; box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.module-card:hover, .tema-card:hover{border-color:rgba(124,77,255,.6)}
+.module-card .module-icon, .tema-card .tema-icon{width:64px; height:64px; border-radius:16px; background:#2a2536; display:grid; place-items:center; font-size:28px; color:#b794ff}
+.module-card h3, .tema-card h3{margin:6px 0 6px}
+.module-card p, .tema-card p{color:#c9c5d6; margin:0}
 
 /* Page: Phishing */
 .tabs{display:flex; gap:24px; padding:22px 0}
@@ -165,7 +166,7 @@ body{
   .hero-grid{grid-template-columns:1fr}
   .hero-media img{height:360px}
   .cta-card{grid-template-columns:1fr}
-  .modules-grid{grid-template-columns: repeat(2, 1fr)}
+  .modules-grid, .temas-grid{grid-template-columns: repeat(2, 1fr)}
   .phishing-hero{grid-template-columns:1fr}
 }
 
@@ -174,7 +175,7 @@ body{
   .nav-toggle{display:block}
   .hero-copy h1{font-size:44px}
   .carousel-track{padding:6px 44px}
-  .modules-grid{grid-template-columns: 1fr}
+  .modules-grid, .temas-grid{grid-template-columns: 1fr}
   .phishing-hero .copy h1{font-size:40px}
 }
 

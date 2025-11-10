@@ -34,12 +34,12 @@
     </header>
 
     <main class="container">
-      <section class="modules-header">
+      <section class="temas-header">
         <h1>Bienvenido de vuelta</h1>
-        <p class="lead center">¿Qué tema quieres fortalecer hoy?</p>
+        <p class="lead temas-subtitle">¿Qué tema quieres fortalecer hoy?</p>
       </section>
 
-      <section class="modules-grid" id="modulesGrid">
+      <section class="temas-grid" id="temasGrid">
         <!-- Los módulos se cargarán dinámicamente desde la API -->
       </section>
     </main>
@@ -51,7 +51,7 @@
         try {
           const res = await fetch('/api/v2/topics');
           const topics = await res.json();
-          const grid = document.getElementById('modulesGrid');
+          const grid = document.getElementById('temasGrid');
           
           if (!grid || topics.length === 0) {
             grid.innerHTML = '<p class="center">No hay temas disponibles aún.</p>';
@@ -67,8 +67,8 @@
           grid.innerHTML = topics.map(topic => {
             const img = topic.imageAssetId ? ('/assets/' + topic.imageAssetId) : resolveImagePath(topic.imagePath || '');
             return `
-              <a class="module-card" href="/m/${topic.slug}">
-                ${img ? `<img src="${img}" alt="${topic.title}" style="width:64px;height:64px;border-radius:16px;object-fit:cover;border:1px solid rgba(255,255,255,.12)" />` : `<div class="module-icon">📚</div>`}
+              <a class="tema-card" href="/m/${topic.slug}">
+                ${img ? `<img src="${img}" alt="${topic.title}" style="width:64px;height:64px;border-radius:16px;object-fit:cover;border:1px solid rgba(255,255,255,.12)" />` : `<div class="tema-icon">📚</div>`}
                 <h3>${topic.title}</h3>
                 <p>${topic.description || ''}</p>
               </a>
@@ -76,7 +76,7 @@
           }).join('');
         } catch (error) {
           console.error('Error cargando temas:', error);
-          document.getElementById('modulesGrid').innerHTML = '<p class="center">Error cargando temas.</p>';
+          document.getElementById('temasGrid').innerHTML = '<p class="center">Error cargando temas.</p>';
         }
       }
       

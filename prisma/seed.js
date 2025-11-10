@@ -96,7 +96,7 @@ async function main(){
       { title: 'NAVEX: Cybersecurity Basics', url: 'https://www.navex.com/en-us/courses/cybersecurity-training/', provider: 'NAVEX', summary: 'Buenas prácticas.' },
       { title: 'Intertek: Awareness Training', url: 'https://www.intertek.com/cybersecurity/training/', provider: 'Intertek', summary: 'Conciencia en ciber.' },
       { title: 'QuestCE: Security Awareness', url: 'https://learn.questce.com/online-training/cybersecurity-security-awareness', provider: 'QuestCE', summary: 'Refuerza protocolos.' },
-      { title: 'HHS: Awareness Training', url: 'https://www.hhs.gov/ocio/cybersecurity/awareness-training/index.html', provider: 'HHS', summary: 'Módulos de phishing y fundamentos.' }
+      { title: 'HHS: Awareness Training', url: 'https://www.hhs.gov/ocio/cybersecurity/awareness-training/index.html', provider: 'HHS', summary: 'Temas de phishing y fundamentos.' }
     ],
     [
       { text: '¿Qué revisar en una URL?', options: [{ text:'Color del botón' }, { text:'Dominio y HTTPS', correct:true }, { text:'Tamaño de fuente' }] }
