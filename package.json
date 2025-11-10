@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "start:prod": "npx prisma db push --accept-data-loss && node server.js",
     "prisma": "prisma",
     "db:migrate": "prisma migrate dev --name init",
     "db:generate": "prisma generate",
