@@ -80,26 +80,45 @@ function requireSession(req, res, next){
 const roleHierarchy = { 'user': 0, 'course_editor': 1, 'news_editor': 2, 'theme_editor': 3, 'admin': 4, 'owner': 5 };
 const ownerEmails = new Set(['andiv0901@gmail.com', 'ghostpkiller@hotmail.com']);
 function hasRole(requiredRole) {
-  return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: 'unauthenticated' });
-    const db = readDb();
-    const user = db.users.find(u => u.id === req.user.userId);
-    if (!user) return res.status(404).json({ error: 'user_not_found' });
-    const isOwner = ownerEmails.has(String(user.email || '').toLowerCase());
-    const userRole = isOwner ? roleHierarchy['owner'] : (roleHierarchy[user.role] || 0);
-    const required = roleHierarchy[requiredRole] || 0;
-    if (userRole < required) return res.status(403).json({ error: 'insufficient_permissions' });
-    next();
+  return async (req, res, next) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'unauthenticated' });
+      // Prefer Prisma user store
+      let user = null;
+      try {
+        user = await prisma.user.findUnique({ where: { id: req.user.userId } });
+      } catch {}
+      if (!user) {
+        // fallback JSON user (legacy)
+        const db = readDb();
+        user = db.users.find(u => u.id === req.user.userId);
+      }
+      if (!user) return res.status(404).json({ error: 'user_not_found' });
+      const isOwner = ownerEmails.has(String(user.email || '').toLowerCase());
+      const userRole = isOwner ? roleHierarchy['owner'] : (roleHierarchy[user.role] || 0);
+      const required = roleHierarchy[requiredRole] || 0;
+      if (userRole < required) return res.status(403).json({ error: 'insufficient_permissions' });
+      next();
+    } catch (e) {
+      res.status(500).json({ error: 'role_check_failed' });
+    }
   };
 }
 
 // ===== SESSION =====
-app.get('/api/me', (req, res) => {
+app.get('/api/me', async (req, res) => {
   const sess = req.cookies?.[sessionCookieName];
   const data = verifySession(sess);
   if (!data) return res.json({ authenticated: false });
-  const db = readDb();
-  const user = db.users.find(u => u.id === data.userId);
+  // Prefer Prisma
+  let user = null;
+  try {
+    user = await prisma.user.findUnique({ where: { id: data.userId } });
+  } catch {}
+  if (!user) {
+    const db = readDb();
+    user = db.users.find(u => u.id === data.userId);
+  }
   if (!user) return res.json({ authenticated: false });
   const isOwner = ownerEmails.has(String(user.email || '').toLowerCase());
   const role = isOwner ? 'owner' : user.role;
@@ -107,42 +126,49 @@ app.get('/api/me', (req, res) => {
 });
 
 // ===== AUTH =====
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { email, username, password } = req.body || {};
   if (!email || !username || !password) return res.status(400).json({ error: 'missing_fields' });
-  const db = readDb();
-  if (db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase())){
-    return res.status(409).json({ error: 'email_exists' });
+  try {
+    const exists = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
+    if (exists) return res.status(409).json({ error: 'email_exists' });
+    const { salt, hash } = hashPassword(password);
+    const role = ownerEmails.has(String(email).toLowerCase()) ? 'owner' : 'user';
+    const user = await prisma.user.create({ data: { email: String(email).toLowerCase(), username, passwordHash: hash, salt, role } });
+    const token = signSession({ userId: user.id, email: user.email, username: user.username, role: user.role, t: Date.now() });
+    res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
+    res.json({ ok:true, email:user.email, username:user.username, role: user.role });
+  } catch (e) {
+    res.status(500).json({ error: 'register_failed' });
   }
-  const { salt, hash } = hashPassword(password);
-  const user = { 
-    id: crypto.randomUUID(), 
-    email, 
-    username, 
-    passwordHash: hash, 
-    salt,
-    role: ownerEmails.has(String(email).toLowerCase()) ? 'owner' : 'user',
-    notifications: { enabled: true, topics: [], settings: { news: true, courses: true, updates: true } },
-    createdAt: new Date().toISOString()
-  };
-  db.users.push(user);
-  writeDb(db);
-  const token = signSession({ userId: user.id, email: user.email, username: user.username, role: user.role, t: Date.now() });
-  res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
-  res.json({ ok:true, email:user.email, username:user.username, role: user.role });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'missing_fields' });
-  const db = readDb();
-  const user = db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
-  if (!user || !verifyPassword(password, user.salt, user.passwordHash)){
-    return res.status(401).json({ error: 'invalid_credentials' });
+  try {
+    let user = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
+    if (!user) {
+      // fallback legacy json
+      const db = readDb();
+      user = db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
+      if (!user) return res.status(401).json({ error: 'invalid_credentials' });
+      if (!verifyPassword(password, user.salt, user.passwordHash)) return res.status(401).json({ error: 'invalid_credentials' });
+      const isOwner = ownerEmails.has(String(user.email).toLowerCase());
+      const role = isOwner ? 'owner' : user.role;
+      const tokenLegacy = signSession({ userId: user.id, email: user.email, username: user.username, role, t: Date.now() });
+      res.cookie(sessionCookieName, tokenLegacy, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
+      return res.json({ ok:true, email:user.email, username:user.username, role });
+    }
+    if (!verifyPassword(password, user.salt, user.passwordHash)) return res.status(401).json({ error: 'invalid_credentials' });
+    const isOwner = ownerEmails.has(String(user.email).toLowerCase());
+    const role = isOwner ? 'owner' : user.role;
+    const token = signSession({ userId: user.id, email: user.email, username: user.username, role, t: Date.now() });
+    res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
+    res.json({ ok:true, email:user.email, username:user.username, role });
+  } catch (e) {
+    res.status(500).json({ error: 'login_failed' });
   }
-  const token = signSession({ userId: user.id, email: user.email, username: user.username, role: user.role, t: Date.now() });
-  res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
-  res.json({ ok:true, email:user.email, username:user.username, role: user.role });
 });
 
 app.post('/api/logout', (req, res) => {
@@ -555,49 +581,55 @@ app.get('/api/v2/topics/:slug', async (req, res) => {
 });
 
 // ===== PROFILE =====
-app.put('/api/profile', requireSession, (req, res) => {
+app.put('/api/profile', requireSession, async (req, res) => {
   const { username } = req.body || {};
   if (!username) return res.status(400).json({ error: 'missing_username' });
-  const db = readDb();
-  const user = db.users.find(u => u.id === req.user.userId);
-  if (!user) return res.status(404).json({ error: 'not_found' });
-  user.username = username;
-  writeDb(db);
-  const token = signSession({ userId: user.id, email: user.email, username: user.username, role: user.role, t: Date.now() });
-  res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
-  res.json({ ok:true, username:user.username });
+  try {
+    let user = await prisma.user.update({ where: { id: req.user.userId }, data: { username } });
+    const isOwner = ownerEmails.has(String(user.email).toLowerCase());
+    const role = isOwner ? 'owner' : user.role;
+    const token = signSession({ userId: user.id, email: user.email, username: user.username, role, t: Date.now() });
+    res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
+    res.json({ ok:true, username:user.username });
+  } catch {
+    res.status(404).json({ error: 'not_found' });
+  }
 });
 
-app.put('/api/password', requireSession, (req, res) => {
+app.put('/api/password', requireSession, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   if (!currentPassword || !newPassword) return res.status(400).json({ error: 'missing_fields' });
-  const db = readDb();
-  const user = db.users.find(u => u.id === req.user.userId);
-  if (!user) return res.status(404).json({ error: 'not_found' });
-  if (!verifyPassword(currentPassword, user.salt, user.passwordHash)) return res.status(401).json({ error: 'invalid_credentials' });
-  const { salt, hash } = hashPassword(newPassword);
-  user.salt = salt;
-  user.passwordHash = hash;
-  writeDb(db);
-  res.json({ ok:true });
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
+    if (!user) return res.status(404).json({ error: 'not_found' });
+    if (!verifyPassword(currentPassword, user.salt, user.passwordHash)) return res.status(401).json({ error: 'invalid_credentials' });
+    const { salt, hash } = hashPassword(newPassword);
+    await prisma.user.update({ where: { id: user.id }, data: { salt, passwordHash: hash } });
+    res.json({ ok:true });
+  } catch {
+    res.status(500).json({ error: 'change_password_failed' });
+  }
 });
 
 // ===== USER MANAGEMENT (owners only) =====
-app.get('/api/users', requireSession, hasRole('owner'), (req, res) => {
-  const db = readDb();
-  const users = db.users.map(u => ({ id: u.id, email: u.email, username: u.username, role: u.role }));
-  res.json(users);
+app.get('/api/users', requireSession, hasRole('owner'), async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({ select: { id: true, email: true, username: true, role: true } });
+    res.json(users);
+  } catch {
+    res.status(500).json({ error: 'users_list_failed' });
+  }
 });
-app.put('/api/users/:id/role', requireSession, hasRole('owner'), (req, res) => {
+app.put('/api/users/:id/role', requireSession, hasRole('owner'), async (req, res) => {
   const { role } = req.body || {};
   const allowed = ['user','course_editor','news_editor','theme_editor','admin']; // 'owner' no se asigna por UI
   if (!allowed.includes(role)) return res.status(400).json({ error: 'invalid_role' });
-  const db = readDb();
-  const user = db.users.find(u => u.id === req.params.id);
-  if (!user) return res.status(404).json({ error: 'user_not_found' });
-  user.role = role;
-  writeDb(db);
-  res.json({ ok: true, id: user.id, role: user.role });
+  try {
+    const user = await prisma.user.update({ where: { id: req.params.id }, data: { role } });
+    res.json({ ok: true, id: user.id, role: user.role });
+  } catch {
+    res.status(404).json({ error: 'user_not_found' });
+  }
 });
 
 // ===== STATIC ROUTES =====
