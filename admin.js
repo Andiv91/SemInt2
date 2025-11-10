@@ -6,7 +6,7 @@ let allTopics = [];
 // ===== INIT =====
 (async function() {
   await checkAuthAndRole();
-  if (!currentUser || !['admin', 'theme_editor', 'news_editor', 'course_editor'].includes(currentUser.role)) {
+  if (!currentUser || !['owner', 'admin', 'theme_editor', 'news_editor', 'course_editor'].includes(currentUser.role)) {
     alert('No tienes permisos para acceder a esta página');
     window.location.href = '/temas';
     return;
@@ -91,7 +91,7 @@ async function loadTopics() {
       return;
     }
     
-    const canEdit = ['admin', 'theme_editor'].includes(currentUser.role);
+    const canEdit = ['owner', 'admin', 'theme_editor'].includes(currentUser.role);
     
     list.innerHTML = allTopics.map(topic => `
       <div class="admin-item">
@@ -102,7 +102,7 @@ async function loadTopics() {
         </div>
         <div class="admin-item-actions">
           ${canEdit ? `<button class="btn btn-ghost btn-small" onclick="editTopic('${topic.id}')">Editar</button>` : ''}
-          ${currentUser.role === 'admin' ? `<button class="btn btn-ghost btn-small" onclick="deleteTopic('${topic.id}')" style="color: #ff6b6b;">Eliminar</button>` : ''}
+          ${['owner','admin'].includes(currentUser.role) ? `<button class="btn btn-ghost btn-small" onclick="deleteTopic('${topic.id}')" style="color: #ff6b6b;">Eliminar</button>` : ''}
         </div>
       </div>
     `).join('');
@@ -213,7 +213,7 @@ async function loadNews() {
           <p style="font-size: 13px; color: var(--muted);">Tema: ${news.topicName || 'N/A'}</p>
         </div>
         <div class="admin-item-actions">
-          ${currentUser.role === 'admin' ? `<button class="btn btn-ghost btn-small" onclick="deleteNews('${news.id}')" style="color: #ff6b6b;">Eliminar</button>` : ''}
+          ${['owner','admin'].includes(currentUser.role) ? `<button class="btn btn-ghost btn-small" onclick="deleteNews('${news.id}')" style="color: #ff6b6b;">Eliminar</button>` : ''}
         </div>
       </div>
     `).join('');
@@ -302,7 +302,7 @@ async function loadCourses() {
           <p style="font-size: 13px; color: var(--muted);">Tema: ${course.topicName || 'N/A'}</p>
         </div>
         <div class="admin-item-actions">
-          ${currentUser.role === 'admin' ? `<button class="btn btn-ghost btn-small" onclick="deleteCourse('${course.id}')" style="color: #ff6b6b;">Eliminar</button>` : ''}
+          ${['owner','admin'].includes(currentUser.role) ? `<button class="btn btn-ghost btn-small" onclick="deleteCourse('${course.id}')" style="color: #ff6b6b;">Eliminar</button>` : ''}
         </div>
       </div>
     `).join('');

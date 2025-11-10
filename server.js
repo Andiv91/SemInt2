@@ -14,6 +14,10 @@ const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-me';
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+function normalizeRole(role) {
+  return String(role || 'user').toLowerCase();
+}
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -61,8 +65,8 @@ function ensureOwnerRoles(){
   let changed = false;
   for (const u of db.users){
     const isOwnerEmail = ownerEmails.has(String(u.email || '').toLowerCase());
-    if (isOwnerEmail && u.role !== 'owner'){ u.role = 'owner'; changed = true; }
-    if (!isOwnerEmail && u.role === 'owner'){ u.role = 'admin'; changed = true; } // downgrade stray owners
+    if (isOwnerEmail && normalizeRole(u.role) !== 'owner'){ u.role = 'owner'; changed = true; }
+    if (!isOwnerEmail && normalizeRole(u.role) === 'owner'){ u.role = 'admin'; changed = true; } // downgrade stray owners
   }
   if (changed) writeDb(db);
 }
@@ -86,7 +90,11 @@ function requireSession(req, res, next){
   const sess = req.cookies?.[sessionCookieName];
   const data = verifySession(sess);
   if (!data) return res.status(401).json({ error: 'unauthenticated' });
-  req.user = data;
+  const isOwner = ownerEmails.has(String(data.email || '').toLowerCase());
+  req.user = {
+    ...data,
+    role: isOwner ? 'owner' : normalizeRole(data.role)
+  };
   return next();
 }
 
@@ -109,9 +117,12 @@ function hasRole(requiredRole) {
       }
       if (!user) return res.status(404).json({ error: 'user_not_found' });
       const isOwner = ownerEmails.has(String(user.email || '').toLowerCase());
-      const userRole = isOwner ? roleHierarchy['owner'] : (roleHierarchy[user.role] || 0);
+      const rawRole = normalizeRole(user.role);
+      const effectiveRole = isOwner ? 'owner' : rawRole;
+      const userRole = roleHierarchy[effectiveRole] || 0;
       const required = roleHierarchy[requiredRole] || 0;
       if (userRole < required) return res.status(403).json({ error: 'insufficient_permissions' });
+      req.user.role = effectiveRole;
       next();
     } catch (e) {
       res.status(500).json({ error: 'role_check_failed' });
@@ -135,7 +146,8 @@ app.get('/api/me', async (req, res) => {
   }
   if (!user) return res.json({ authenticated: false });
   const isOwner = ownerEmails.has(String(user.email || '').toLowerCase());
-  const role = isOwner ? 'owner' : user.role;
+  const rawRole = normalizeRole(user.role);
+  const role = isOwner ? 'owner' : rawRole;
   return res.json({ authenticated: true, email: user.email, username: user.username, userId: user.id, role });
 });
 
@@ -149,9 +161,10 @@ app.post('/api/register', async (req, res) => {
     const { salt, hash } = hashPassword(password);
     const role = ownerEmails.has(String(email).toLowerCase()) ? 'owner' : 'user';
     const user = await prisma.user.create({ data: { email: String(email).toLowerCase(), username, passwordHash: hash, salt, role } });
-    const token = signSession({ userId: user.id, email: user.email, username: user.username, role: user.role, t: Date.now() });
+    const effectiveRole = ownerEmails.has(String(user.email).toLowerCase()) ? 'owner' : normalizeRole(user.role);
+    const token = signSession({ userId: user.id, email: user.email, username: user.username, role: effectiveRole, t: Date.now() });
     res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
-    res.json({ ok:true, email:user.email, username:user.username, role: user.role });
+    res.json({ ok:true, email:user.email, username:user.username, role: effectiveRole });
   } catch (e) {
     res.status(500).json({ error: 'register_failed' });
   }
@@ -169,14 +182,14 @@ app.post('/api/login', async (req, res) => {
       if (!user) return res.status(401).json({ error: 'invalid_credentials' });
       if (!verifyPassword(password, user.salt, user.passwordHash)) return res.status(401).json({ error: 'invalid_credentials' });
       const isOwner = ownerEmails.has(String(user.email).toLowerCase());
-      const role = isOwner ? 'owner' : user.role;
+      const role = isOwner ? 'owner' : normalizeRole(user.role);
       const tokenLegacy = signSession({ userId: user.id, email: user.email, username: user.username, role, t: Date.now() });
       res.cookie(sessionCookieName, tokenLegacy, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
       return res.json({ ok:true, email:user.email, username:user.username, role });
     }
     if (!verifyPassword(password, user.salt, user.passwordHash)) return res.status(401).json({ error: 'invalid_credentials' });
     const isOwner = ownerEmails.has(String(user.email).toLowerCase());
-    const role = isOwner ? 'owner' : user.role;
+    const role = isOwner ? 'owner' : normalizeRole(user.role);
     const token = signSession({ userId: user.id, email: user.email, username: user.username, role, t: Date.now() });
     res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
     res.json({ ok:true, email:user.email, username:user.username, role });
@@ -616,7 +629,7 @@ app.put('/api/profile', requireSession, async (req, res) => {
   try {
     let user = await prisma.user.update({ where: { id: req.user.userId }, data: { username } });
     const isOwner = ownerEmails.has(String(user.email).toLowerCase());
-    const role = isOwner ? 'owner' : user.role;
+    const role = isOwner ? 'owner' : normalizeRole(user.role);
     const token = signSession({ userId: user.id, email: user.email, username: user.username, role, t: Date.now() });
     res.cookie(sessionCookieName, token, { httpOnly:true, sameSite:'lax', secure:false, maxAge:1000*60*60*8 });
     res.json({ ok:true, username:user.username });

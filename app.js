@@ -71,7 +71,7 @@
         if (btnUser){ btnUser.style.display='inline-flex'; btnUser.textContent = d.username || d.email; }
         
         // Mostrar botones de admin si es necesario
-        if (d.role && (d.role === 'admin' || d.role === 'theme_editor' || d.role === 'news_editor' || d.role === 'course_editor')) {
+        if (d.role && (d.role === 'owner' || d.role === 'admin' || d.role === 'theme_editor' || d.role === 'news_editor' || d.role === 'course_editor')) {
           let adminBtn = document.getElementById('btn-admin');
           if (!adminBtn) {
             // Crear botón si no existe
@@ -87,6 +87,9 @@
           } else {
             adminBtn.style.display = 'inline-flex';
           }
+        } else {
+          const adminBtn = document.getElementById('btn-admin');
+          if (adminBtn) adminBtn.style.display = 'none';
         }
       } else {
         if (btnLogin) btnLogin.style.display='inline-flex';
@@ -96,6 +99,8 @@
         const ctaStartBtn = document.getElementById('cta-start');
         if (ctaStartBtn) ctaStartBtn.style.display='inline-flex';
         if (btnUser){ btnUser.style.display='none'; btnUser.textContent=''; }
+        const adminBtn = document.getElementById('btn-admin');
+        if (adminBtn) adminBtn.style.display = 'none';
       }
     }catch{}
   }
