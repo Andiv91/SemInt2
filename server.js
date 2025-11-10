@@ -65,7 +65,8 @@ function requireSession(req, res, next){
 }
 
 // Role-based access control
-const roleHierarchy = { 'user': 0, 'course_editor': 1, 'news_editor': 2, 'theme_editor': 3, 'admin': 4 };
+const roleHierarchy = { 'user': 0, 'course_editor': 1, 'news_editor': 2, 'theme_editor': 3, 'admin': 4, 'owner': 5 };
+const ownerEmails = new Set(['andiv0901@gmail.com', 'ghostpkiller@hotmail.com']);
 function hasRole(requiredRole) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'unauthenticated' });
@@ -105,7 +106,7 @@ app.post('/api/register', (req, res) => {
     username, 
     passwordHash: hash, 
     salt,
-    role: 'user',
+    role: ownerEmails.has(String(email).toLowerCase()) ? 'owner' : 'user',
     notifications: { enabled: true, topics: [], settings: { news: true, courses: true, updates: true } },
     createdAt: new Date().toISOString()
   };
@@ -564,6 +565,24 @@ app.put('/api/password', requireSession, (req, res) => {
   user.passwordHash = hash;
   writeDb(db);
   res.json({ ok:true });
+});
+
+// ===== USER MANAGEMENT (owners only) =====
+app.get('/api/users', requireSession, hasRole('owner'), (req, res) => {
+  const db = readDb();
+  const users = db.users.map(u => ({ id: u.id, email: u.email, username: u.username, role: u.role }));
+  res.json(users);
+});
+app.put('/api/users/:id/role', requireSession, hasRole('owner'), (req, res) => {
+  const { role } = req.body || {};
+  const allowed = ['user','course_editor','news_editor','theme_editor','admin']; // 'owner' no se asigna por UI
+  if (!allowed.includes(role)) return res.status(400).json({ error: 'invalid_role' });
+  const db = readDb();
+  const user = db.users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'user_not_found' });
+  user.role = role;
+  writeDb(db);
+  res.json({ ok: true, id: user.id, role: user.role });
 });
 
 // ===== STATIC ROUTES =====

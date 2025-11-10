@@ -97,7 +97,8 @@ body{
 
 /* Login */
 .login-card{background:#14121b; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:28px; width:min(560px,92%); margin:0 auto; box-shadow:0 20px 40px rgba(0,0,0,.5)}
-.login-card h1{margin:0 0 6px}
+.login-card h1{margin:0 0 6px; text-align:center}
+.login-card h2{text-align:center}
 .login-card .muted{color:#b7b7c2}
 .login-card form{display:grid; gap:14px; margin-top:14px}
 .login-card label{display:grid; gap:6px; font-weight:600}
@@ -108,6 +109,7 @@ body{
 .modules-header{padding:40px 0 10px}
 .modules-header h1{text-align:center; font-size:48px; margin:0}
 .modules-header .center{text-align:center}
+.copy{text-align:center}
 .modules-grid{display:grid; grid-template-columns: repeat(3, 1fr); gap:28px; padding:20px 0 60px}
 .module-card{background:#1c1a22; color:#fff; text-decoration:none; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:26px; display:grid; gap:10px; justify-items:center; text-align:center; box-shadow:0 10px 24px rgba(0,0,0,.3)}
 .module-card:hover{border-color:rgba(124,77,255,.6)}
