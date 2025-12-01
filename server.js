@@ -474,7 +474,7 @@ app.put('/api/v2/topics/:slug', requireSession, hasRole('theme_editor'), async (
     res.status(404).json({ error: 'not_found' });
   }
 });
-app.delete('/api/v2/topics/:slug', requireSession, hasRole('admin'), async (req, res) => {
+app.delete('/api/v2/topics/:slug', requireSession, hasRole('owner'), async (req, res) => {
   try {
     await prisma.video.deleteMany({ where: { topic: { slug: req.params.slug } } });
     await prisma.news.deleteMany({ where: { topic: { slug: req.params.slug } } });
@@ -511,7 +511,20 @@ app.post('/api/v2/topics/:slug/news', requireSession, hasRole('news_editor'), as
     res.status(500).json({ error: 'db_error' });
   }
 });
-app.delete('/api/v2/news/:id', requireSession, hasRole('admin'), async (req, res) => {
+// Update news (allow news_editor, theme_editor, admin, owner)
+app.put('/api/v2/news/:id', requireSession, hasRole('news_editor'), async (req, res) => {
+  const { title, url, source, summary } = req.body || {};
+  try {
+    const updated = await prisma.news.update({
+      where: { id: req.params.id },
+      data: { title, url, source: source || '', summary: summary || '' }
+    });
+    res.json({ ok: true, news: updated });
+  } catch {
+    res.status(404).json({ error: 'not_found' });
+  }
+});
+app.delete('/api/v2/news/:id', requireSession, hasRole('owner'), async (req, res) => {
   try {
     await prisma.news.delete({ where: { id: req.params.id } });
     res.json({ ok: true });
@@ -531,7 +544,20 @@ app.post('/api/v2/topics/:slug/courses', requireSession, hasRole('course_editor'
     res.status(500).json({ error: 'db_error' });
   }
 });
-app.delete('/api/v2/courses/:id', requireSession, hasRole('admin'), async (req, res) => {
+// Update course (allow course_editor, theme_editor, admin, owner)
+app.put('/api/v2/courses/:id', requireSession, hasRole('course_editor'), async (req, res) => {
+  const { title, url, provider, summary } = req.body || {};
+  try {
+    const updated = await prisma.course.update({
+      where: { id: req.params.id },
+      data: { title, url, provider: provider || '', summary: summary || '' }
+    });
+    res.json({ ok: true, course: updated });
+  } catch {
+    res.status(404).json({ error: 'not_found' });
+  }
+});
+app.delete('/api/v2/courses/:id', requireSession, hasRole('owner'), async (req, res) => {
   try {
     await prisma.course.delete({ where: { id: req.params.id } });
     res.json({ ok: true });

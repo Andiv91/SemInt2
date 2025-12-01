@@ -1,0 +1,578 @@
+ARQUITECTURA TÉCNICA DEL PROYECTO (Arqu.TXT)
+
+1) Resumen ejecutivo
+Este proyecto implementa una plataforma web de aprendizaje de ciberseguridad orientada a personas. Integra:
+- Un backend Node.js/Express con autenticación local y control de acceso basado en roles (RBAC).
+- Un frontend estático responsivo (HTML/CSS/JS) con páginas dinámicas para temas (módulos), detalle de cada tema y panel de administración.
+- Persistencia en PostgreSQL mediante Prisma ORM, incluyendo almacenamiento de imágenes como BLOBs (tabla Asset).
+- Un sistema de contenido administrable (temas, videos, noticias, cursos y cuestionarios) y un mecanismo de seed idempotente.
+- Despliegue en Render (Web Service) y base de datos gestionada (Neon o Render Managed PostgreSQL).
+
+La aplicación ofrece registro/inicio de sesión, navegación por temas, visualización de explicaciones, videos embebidos, noticias, cursos, cuestionarios y un panel de administración con permisos diferenciados: user, course_editor, news_editor, theme_editor, admin y owner. Determinados correos tienen privilegios de owner y pueden asignar roles a otros usuarios.
+
+
+2) Visión general de la arquitectura
+Capas principales:
+- Cliente (Frontend): HTML5/CSS3/JS (sin framework), páginas: index.html, modulos.html, module.html, phishing.html, sobre.html, contacto.html, admin.html, login.html, ava.html. Lógica en app.js y estilos en styles.css.
+- Servidor (Backend): Node.js con Express (server.js). Exposición de API REST v2 para CRUD de contenido y endpoints de autenticación, perfil, seed y assets binarios.
+- Datos (DB): PostgreSQL administrado por Prisma (schema.prisma). Tablas principales: User, Topic, Video, News, Course, QuizQuestion, QuizOption, Asset, NotificationSetting, TopicSubscription.
+- Almacenamiento de archivos: imágenes subidas vía Multer; se guardan como BLOB en tabla Asset y se sirven por /assets/:id.
+- Autenticación y sesiones: credenciales locales con contraseñas hasheadas y cookies firmadas con HMAC. Middleware requireSession y hasRole para proteger rutas.
+- Despliegue: Render (Web Service) con Start Command que hace prisma db push para sincronizar esquema; conexión a PostgreSQL a través de DATABASE_URL (Neon/Render).
+
+Diagrama lógico (alto nivel, textual):
+Cliente (HTML/CSS/JS) → API REST Express → Prisma Client → PostgreSQL
+                                      ↘ /assets/:id (binarios desde DB)
+
+
+3) Backend (server.js): diseño y lógica detallada
+3.1. Dependencias clave
+- express: servidor HTTP y ruteo.
+- prisma: ORM para PostgreSQL (Prisma Client).
+- multer: manejo de multipart/form-data para uploads de imágenes.
+- crypto (nativo Node): HMAC y hash de contraseñas.
+- cookie-parser (o lógica equivalente): lectura/escritura de cookies.
+
+3.2. Autenticación y sesiones
+- Registro (/api/register): crea usuarios en PostgreSQL (tabla User) con hash de contraseña (p.ej. PBKDF2/argon2/bcrypt; en el proyecto se usa función hashPassword/verifyPassword). Guarda username y email únicos. El rol por defecto es 'user'.
+- Login (/api/login): valida credenciales contra DB, genera cookie de sesión firmada (HMAC) con userId y exp. No se guardan sesiones en memoria; la cookie firmada es la fuente de verdad.
+- Logout (/api/logout): invalida la cookie (Set-Cookie expirado).
+- Sesión (/api/me): extrae cookie, verifica firma HMAC (verifySession), obtiene el usuario desde DB y devuelve información mínima (id, username, email, role efectivo).
+- Owner override: conjunto ownerEmails = { 'andiv0901@gmail.com', 'ghostpkiller@hotmail.com' }. Si el email de un usuario pertenece a este conjunto, su rol efectivo se considera 'owner' aunque el campo role de DB tenga otro valor (normalización).
+
+3.3. RBAC y middleware
+- roleHierarchy: { user:0, course_editor:1, news_editor:2, theme_editor:3, admin:4, owner:5 }.
+- hasRole(requiredRole): middleware que verifica req.user (inyectado por requireSession). Consulta a Prisma para traer el rol real del usuario, aplica override de owner y compara jerárquicamente contra requiredRole.
+- requireSession: verifica cookie firmada y setea req.user con userId y role efectivo.
+
+3.4. Gestión de usuarios (solo owner)
+- GET /api/users: lista de usuarios (id, email, username, role).
+- PUT /api/users/:id/role: permite al owner asignar roles (user, course_editor, news_editor, theme_editor, admin). El rol owner no se asigna por API; se determina por email fijo.
+
+3.5. Modelos de contenido (vía Prisma)
+- Topic: slug único, title, description, imagePath opcional o imageAssetId (BLOB en Asset). Relaciones con Video, News, Course, QuizQuestion, TopicSubscription.
+- Video: url de YouTube u otros, asociado a Topic.
+- News: título, url (hipervínculo), resumen, relacionado a Topic.
+- Course: título, url, resumen, relacionado a Topic.
+- QuizQuestion: pregunta (10 por tema), relación N:1 con Topic.
+- QuizOption: opciones de respuesta (varias por pregunta), con flag isCorrect.
+- Asset: BLOB binario (imagen), mimeType, filename.
+- NotificationSetting: preferencias del usuario (p.ej., notificaciones por tema).
+- TopicSubscription: suscripciones usuario-tema.
+
+3.6. Endpoints principales (API v2 y autenticación)
+- Autenticación y perfil
+  - POST /api/register
+  - POST /api/login
+  - POST /api/logout
+  - GET  /api/me
+  - PUT  /api/profile  (cambia username/email con validaciones de unicidad)
+  - PUT  /api/password (cambia contraseña con verificación de la actual)
+- Contenido (requiere roles editor/admin/owner para crear/editar/borrar; lectura pública)
+  - GET  /api/v2/topics
+  - POST /api/v2/topics (theme_editor+)
+  - GET  /api/v2/topics/:slug
+  - PUT  /api/v2/topics/:id (theme_editor+)
+  - DELETE /api/v2/topics/:id (theme_editor+)
+  - POST /api/v2/topics/:slug/videos (course_editor+ o theme_editor+ según política)
+  - POST /api/v2/topics/:slug/news (news_editor+)
+  - POST /api/v2/topics/:slug/courses (course_editor+)
+  - CRUD análogo para videos, noticias y cursos (según permisos).
+  - POST /api/v2/topics/:slug/quiz-questions (theme_editor+/admin/owner)
+  - CRUD de opciones (quiz options) anidadas en preguntas.
+- Assets
+  - POST /api/v2/topics/:slug/image (multipart/form-data; requiere theme_editor+)
+  - GET  /assets/:id (sirve binario desde DB con cache y cabeceras mime)
+- Admin y utilidades
+  - GET  /api/admin/seed (owner): ejecuta seed idempotente si se requiere.
+  - GET  /api/health (opcional): healthcheck del servicio.
+
+3.7. Subida y servicio de imágenes
+- Multer procesa input type="file" desde admin.html. El backend valida mimeType, tamaño y guarda el buffer en Asset.
+- El Topic se actualiza con imageAssetId. El frontend consume /assets/:id para mostrar la imagen.
+- Se aceptan también rutas estáticas (imagePath) como fallback.
+
+3.8. Seed idempotente
+- prisma/seed.js define datos iniciales para Topics, Videos, News, Courses, QuizQuestions/Options.
+- server.js ejecuta ensureSeedOnBoot en arranque: si no hay Topics, corre el seed.
+- /api/admin/seed permite al owner disparar el seed manualmente (reintentos o entorno vacío).
+
+3.9. Manejo de errores y seguridad
+- Respuestas JSON con códigos 4xx/5xx, mensajes consistentes.
+- Validación de entrada: email/username únicos, URLs válidas para news/courses/videos.
+- Cookies firmadas (HMAC) con atributos httpOnly y secure en producción.
+- No se exponen hashes ni datos sensibles. Las contraseñas se almacenan con hash fuerte.
+
+
+4) Frontend: diseño y lógica detallada
+4.1. Páginas clave
+- index.html: Home centrado en aprendizaje personal, CTA “Iniciar Sesión” y “Crear Cuenta”, testimonios, navegación a /temas, /sobre.html, /contacto.html.
+- modulos.html (temas): lista dinámica de temas (GET /api/v2/topics). Cada tarjeta muestra imagen (Asset o path) y enlace a /m/:slug.
+- module.html: plantilla genérica de tema. Trae /api/v2/topics/:slug y renderiza:
+  - Título, descripción, imagen.
+  - Video YouTube embebido (iframe) basado en url del tema.
+  - Sección de noticias (título, enlace, resumen).
+  - Sección de cursos (título, enlace, resumen).
+  - Cuestionario de 10 preguntas, evalúa puntaje y muestra feedback (bajo/medio/alto).
+- phishing.html: ejemplo explícito con video embebido, imagen local y estructura uniforme.
+- admin.html: panel para CRUD de temas, subida de imagen, edición de videos, noticias, cursos y preguntas de cuestionario. Sección de “Usuarios (solo dueño)” para asignación de roles.
+- sobre.html, contacto.html: contenido orientado a usuarios individuales, no a empresas.
+- login.html: registro/inicio de sesión con estética consistente; perfil y cambio de contraseña mediante modal y llamadas a /api.
+- ava.html: página de reproductor genérico (quedó como residual; la lógica principal de video se consolidó en module.html).
+
+4.2. Lógica en app.js
+- checkSessionUI(): consulta /api/me y muestra/oculta botones (Iniciar sesión, Salir, Perfil) y, si corresponde, el botón “Administración” cuando el rol sea owner/admin/editor.
+- Modales: perfil para editar username, cambiar contraseña y enlace a soporte.
+- Navegación protegida: si el usuario no está autenticado y pulsa acciones protegidas, redirige a login.
+- Render dinámico: carga de temas en grilla, render de detalle de tema, construcción de listas de noticias y cursos con hipervínculos reales.
+- Cuestionarios: 10 preguntas por tema. Cálculo del puntaje y mensajes según rango: 1–3 bajo, 4–6 medio, 7–10 alto.
+- Resolve de rutas de imágenes: función resolveImagePath para compatibilidad entre assets BLOB (/assets/:id) y archivos locales en /images.
+
+4.3. Estilos (styles.css)
+- Estética consistente, responsive. Componentes: tarjetas de tema, secciones de contenido, formularios de login y administración, modales.
+- Renombrados semánticos: modules-* → temas-*, module-* → tema-*. Clases coherentes con el propósito (tema-card, tema-icon).
+- Ajustes de centrado de textos y coherencia del panel admin (sección “crear tema”).
+
+
+5) Datos y modelo (Prisma/PostgreSQL)
+5.1. Modelos principales (resumen conceptual)
+- User(id, email único, username único, passwordHash, role String, createdAt, updatedAt, …)
+- Topic(id, slug único, title, description, imagePath?, imageAssetId?, createdAt, updatedAt)
+- Asset(id, mimeType, filename, data (BLOB), createdAt)
+- Video(id, topicId, title?, url, createdAt)
+- News(id, topicId, title, url, summary, createdAt)
+- Course(id, topicId, title, url, summary, createdAt)
+- QuizQuestion(id, topicId, text, createdAt)
+- QuizOption(id, questionId, text, isCorrect, createdAt)
+- NotificationSetting(id, userId, …)
+- TopicSubscription(id, userId, topicId, …)
+
+5.2. Relaciones relevantes
+- User 1—N TopicSubscription (un usuario se puede suscribir a muchos temas).
+- Topic 1—N TopicSubscription (un tema tiene muchos suscriptores).
+- Topic 1—N Video, 1—N News, 1—N Course, 1—N QuizQuestion.
+- QuizQuestion 1—N QuizOption.
+- Topic —1 Asset (opcional, por imageAssetId).
+- User 1—N NotificationSetting (opcional según diseño).
+
+5.3. Integridad y restricciones
+- Unicidad de email, username y slug.
+- Eliminación en cascada en relaciones dependientes (por ej., opciones cuando se borra una pregunta).
+- Validación de URLs para news/courses/videos.
+
+5.4. Seed idempotente
+- Upsert por claves únicas (slug, combinación topicId+title, etc.).
+- Evita duplicados al re-ejecutar.
+
+
+6) Despliegue y operación
+6.1. Entorno
+- Render (Web Service): configura NODE_VERSION (si aplica), PORT (Render inyecta), y DATABASE_URL apuntando a Neon o Render Managed PostgreSQL.
+- Start Command: npm run start:prod
+  - start:prod → npx prisma db push --accept-data-loss && node server.js
+  - db push sincroniza schema.prisma con la base activa, útil para entornos sin historial de migraciones.
+
+6.2. Variables de entorno
+- DATABASE_URL: cadena de conexión PostgreSQL (Neon/Render).
+- SESSION_SECRET (o HMAC_SECRET): clave usada para firmar cookies de sesión.
+- Opcional: NODE_ENV=production para banderas de seguridad (secure cookies).
+
+6.3. Build y run
+- Producción: Render ejecuta npm install, genera Prisma Client y arranca server.js tras db push.
+- Local: npm install, npx prisma db push, node server.js (o npm run dev si existe). Configurar .env con DATABASE_URL local (Postgres) para desarrollo.
+
+6.4. Observabilidad y troubleshooting
+- Healthchecks (opcional /api/health).
+- Logs de Render. En errores de Prisma: revisar provider en schema.prisma, migration_lock.toml y usar db push para resolver esquemas legados.
+
+
+7) Seguridad, rendimiento y buenas prácticas
+- Hash fuerte de contraseñas (evitar almacenamiento plano).
+- Cookies httpOnly; secure y sameSite en producción.
+- Validación de datos en backend (tamaños de archivo, extensiones y tipos mime).
+- Límites de tamaño para uploads (Multer).
+- Paginación o límites en listados (temas, noticias, cursos) si crece el dataset.
+- Índices en columnas de búsqueda/clave única (email, username, slug).
+- Minimizar datos en /api/me; no incluir campos sensibles.
+- RBAC claro: separar permisos por tipo de contenido; owner solo por email verificado.
+
+
+8) Guía de uso funcional (alto nivel)
+- Un usuario crea cuenta o inicia sesión.
+- Desde Home navega a Temas (/temas), elige un tema y entra a su detalle (/m/:slug).
+- Ve explicación, video, noticias, cursos y hace el cuestionario. Obtiene su nivel estimado.
+- Usuarios con permisos acceden a /admin para crear/editar/eliminar temas, subir imágenes y gestionar contenido. Owner puede asignar roles a otros usuarios.
+
+
+9) Referencia de endpoints (resumen)
+Autenticación/Perfil
+- POST /api/register
+- POST /api/login
+- POST /api/logout
+- GET  /api/me
+- PUT  /api/profile
+- PUT  /api/password
+
+Contenido
+- GET    /api/v2/topics
+- POST   /api/v2/topics
+- GET    /api/v2/topics/:slug
+- PUT    /api/v2/topics/:id
+- DELETE /api/v2/topics/:id
+- POST   /api/v2/topics/:slug/image
+- CRUD análogo para /videos, /news, /courses (vinculados a :slug o :id según diseño)
+- CRUD para /quiz-questions y /quiz-options (anidados por pregunta/tema)
+
+Admin/Utilidades
+- GET /api/users                (owner)
+- PUT /api/users/:id/role       (owner)
+- GET /api/admin/seed           (owner)
+- GET /assets/:id               (público, servir imagen por id)
+
+
+10) Código para generar diagrama de base de datos (ER) y MER
+10.1. Mermaid ER (usable en mermaid.live)
+Copiar y pegar en https://mermaid.live para generar el diagrama.
+
+```mermaid
+erDiagram
+  USER {
+    uuid id
+    string email
+    string username
+    string passwordHash
+    string role
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  TOPIC {
+    uuid id
+    string slug
+    string title
+    string description
+    string imagePath
+    uuid imageAssetId
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  ASSET {
+    uuid id
+    string filename
+    string mimeType
+    bytes data
+    datetime createdAt
+  }
+
+  VIDEO {
+    uuid id
+    uuid topicId
+    string title
+    string url
+    datetime createdAt
+  }
+
+  NEWS {
+    uuid id
+    uuid topicId
+    string title
+    string url
+    string summary
+    datetime createdAt
+  }
+
+  COURSE {
+    uuid id
+    uuid topicId
+    string title
+    string url
+    string summary
+    datetime createdAt
+  }
+
+  QUIZQUESTION {
+    uuid id
+    uuid topicId
+    string text
+    datetime createdAt
+  }
+
+  QUIZOPTION {
+    uuid id
+    uuid questionId
+    string text
+    boolean isCorrect
+    datetime createdAt
+  }
+
+  NOTIFICATIONSETTING {
+    uuid id
+    uuid userId
+  }
+
+  TOPICSUBSCRIPTION {
+    uuid id
+    uuid userId
+    uuid topicId
+  }
+
+  USER ||--o{ NOTIFICATIONSETTING : has
+  USER ||--o{ TOPICSUBSCRIPTION : subscribes
+  TOPIC ||--o{ TOPICSUBSCRIPTION : has
+  TOPIC ||--o{ VIDEO : has
+  TOPIC ||--o{ NEWS : has
+  TOPIC ||--o{ COURSE : has
+  TOPIC ||--o{ QUIZQUESTION : has
+  QUIZQUESTION ||--o{ QUIZOPTION : has
+  ASSET ||--o| TOPIC : image_of
+```
+
+10.2. PlantUML (ERD)
+Copiar y pegar en https://www.plantuml.com/plantuml para generar.
+
+```plantuml
+@startuml
+hide circle
+
+entity "User" as User {
+  *id: UUID [PK]
+  --
+  email: String [UNIQ]
+  username: String [UNIQ]
+  passwordHash: String
+  role: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity "Topic" as Topic {
+  *id: UUID [PK]
+  --
+  slug: String [UNIQ]
+  title: String
+  description: String
+  imagePath: String?
+  imageAssetId: UUID?
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+entity "Asset" as Asset {
+  *id: UUID [PK]
+  --
+  filename: String
+  mimeType: String
+  data: Bytes
+  createdAt: DateTime
+}
+
+entity "Video" as Video {
+  *id: UUID [PK]
+  --
+  topicId: UUID [FK -> Topic.id]
+  title: String?
+  url: String
+  createdAt: DateTime
+}
+
+entity "News" as News {
+  *id: UUID [PK]
+  --
+  topicId: UUID [FK -> Topic.id]
+  title: String
+  url: String
+  summary: String
+  createdAt: DateTime
+}
+
+entity "Course" as Course {
+  *id: UUID [PK]
+  --
+  topicId: UUID [FK -> Topic.id]
+  title: String
+  url: String
+  summary: String
+  createdAt: DateTime
+}
+
+entity "QuizQuestion" as QuizQuestion {
+  *id: UUID [PK]
+  --
+  topicId: UUID [FK -> Topic.id]
+  text: String
+  createdAt: DateTime
+}
+
+entity "QuizOption" as QuizOption {
+  *id: UUID [PK]
+  --
+  questionId: UUID [FK -> QuizQuestion.id]
+  text: String
+  isCorrect: Boolean
+  createdAt: DateTime
+}
+
+entity "NotificationSetting" as NotificationSetting {
+  *id: UUID [PK]
+  --
+  userId: UUID [FK -> User.id]
+}
+
+entity "TopicSubscription" as TopicSubscription {
+  *id: UUID [PK]
+  --
+  userId: UUID [FK -> User.id]
+  topicId: UUID [FK -> Topic.id]
+}
+
+User ||--o{ NotificationSetting
+User ||--o{ TopicSubscription
+Topic ||--o{ TopicSubscription
+Topic ||--o{ Video
+Topic ||--o{ News
+Topic ||--o{ Course
+Topic ||--o{ QuizQuestion
+QuizQuestion ||--o{ QuizOption
+Asset ||--o| Topic
+@enduml
+```
+
+10.3. DDL SQL aproximado (referencial)
+Este SQL no es la fuente de verdad (Prisma genera el DDL), pero sirve para visualizar el modelo:
+
+```sql
+-- Users
+CREATE TABLE "User" (
+  id UUID PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  username TEXT UNIQUE NOT NULL,
+  passwordHash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user',
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  updatedAt TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Assets
+CREATE TABLE "Asset" (
+  id UUID PRIMARY KEY,
+  filename TEXT NOT NULL,
+  mimeType TEXT NOT NULL,
+  data BYTEA NOT NULL,
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Topics
+CREATE TABLE "Topic" (
+  id UUID PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  imagePath TEXT,
+  imageAssetId UUID,
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  updatedAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_topic_asset FOREIGN KEY (imageAssetId) REFERENCES "Asset"(id) ON DELETE SET NULL
+);
+
+-- Videos
+CREATE TABLE "Video" (
+  id UUID PRIMARY KEY,
+  topicId UUID NOT NULL,
+  title TEXT,
+  url TEXT NOT NULL,
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_video_topic FOREIGN KEY (topicId) REFERENCES "Topic"(id) ON DELETE CASCADE
+);
+
+-- News
+CREATE TABLE "News" (
+  id UUID PRIMARY KEY,
+  topicId UUID NOT NULL,
+  title TEXT NOT NULL,
+  url TEXT NOT NULL,
+  summary TEXT,
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_news_topic FOREIGN KEY (topicId) REFERENCES "Topic"(id) ON DELETE CASCADE
+);
+
+-- Courses
+CREATE TABLE "Course" (
+  id UUID PRIMARY KEY,
+  topicId UUID NOT NULL,
+  title TEXT NOT NULL,
+  url TEXT NOT NULL,
+  summary TEXT,
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_course_topic FOREIGN KEY (topicId) REFERENCES "Topic"(id) ON DELETE CASCADE
+);
+
+-- QuizQuestion
+CREATE TABLE "QuizQuestion" (
+  id UUID PRIMARY KEY,
+  topicId UUID NOT NULL,
+  text TEXT NOT NULL,
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_question_topic FOREIGN KEY (topicId) REFERENCES "Topic"(id) ON DELETE CASCADE
+);
+
+-- QuizOption
+CREATE TABLE "QuizOption" (
+  id UUID PRIMARY KEY,
+  questionId UUID NOT NULL,
+  text TEXT NOT NULL,
+  isCorrect BOOLEAN NOT NULL DEFAULT FALSE,
+  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_option_question FOREIGN KEY (questionId) REFERENCES "QuizQuestion"(id) ON DELETE CASCADE
+);
+
+-- NotificationSetting
+CREATE TABLE "NotificationSetting" (
+  id UUID PRIMARY KEY,
+  userId UUID NOT NULL,
+  CONSTRAINT fk_notification_user FOREIGN KEY (userId) REFERENCES "User"(id) ON DELETE CASCADE
+);
+
+-- TopicSubscription
+CREATE TABLE "TopicSubscription" (
+  id UUID PRIMARY KEY,
+  userId UUID NOT NULL,
+  topicId UUID NOT NULL,
+  CONSTRAINT fk_subscription_user FOREIGN KEY (userId) REFERENCES "User"(id) ON DELETE CASCADE,
+  CONSTRAINT fk_subscription_topic FOREIGN KEY (topicId) REFERENCES "Topic"(id) ON DELETE CASCADE
+);
+```
+
+
+11) Roadmap y mejoras futuras
+- Internacionalización (i18n) y accesibilidad (a11y).
+- Métricas de aprendizaje por usuario (progreso, historial de cuestionarios).
+- Paginación/filtrado/búsqueda avanzada de contenido.
+- Versionado y borradores de contenido para editores.
+- Integración de CDN para imágenes pesadas; caché en headers de /assets/:id.
+- MFA/2FA opcional y recuperación de contraseña por email.
+- Historial de cambios y auditoría de acciones admin.
+
+
+12) Referencias breves
+- Prisma ORM docs: prisma.io
+- Render docs: render.com/docs
+- Neon PostgreSQL: neon.tech
+- OWASP Cheat Sheets (Auth, Session Management, Input Validation)
+- Mermaid y PlantUML para diagramación
+
+
+Anexo A: Flujo de sesión (texto)
+1. Usuario envía POST /api/login con email/username y contraseña.
+2. Backend verifica credenciales, firma cookie de sesión (HMAC) con userId y exp.
+3. Frontend recibe Set-Cookie; app.js llama a /api/me para estado UI.
+4. checkSessionUI muestra botones adecuados y “Administración” si el rol lo permite.
+5. Rutas protegidas verifican requireSession + hasRole.
+6. Logout limpia la cookie y UI vuelve a estado anónimo.
+
+
+Anexo B: Consideraciones de despliegue
+- Si se migra de SQLite a Postgres, asegurar provider=postgresql en schema.prisma y migration_lock.toml consistente. En Render, usar db push para evitar conflictos de historial.
+- Si la base está vacía, ensureSeedOnBoot poblará contenido. También disponible /api/admin/seed para ejecución manual (owner).
+
+

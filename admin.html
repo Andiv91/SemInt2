@@ -31,6 +31,11 @@
 
       <section class="login-card" style="margin-top:18px">
         <h2>Temas</h2>
+        <div class="row" id="modeRow" style="gap:10px; flex-wrap:wrap; margin-top:8px">
+          <button class="btn btn-primary" id="btnModeCreate" type="button">Crear</button>
+          <button class="btn btn-ghost" id="btnModeEdit" type="button">Editar</button>
+          <select id="editTopicSelect" style="display:none; min-width:260px"></select>
+        </div>
         <form id="topicForm" style="margin-top:8px; display:grid; gap:10px">
           <div class="row" style="gap:10px; flex-wrap:wrap">
             <label>Slug <input type="text" name="slug" required /></label>
@@ -38,6 +43,10 @@
             <label>Imagen del tema (archivo) <input type="file" name="image" accept="image/*"/></label>
       </div>
           <label>Descripción <input type="text" name="description" /></label>
+          <div class="row" style="gap:12px; align-items:center">
+            <img id="topicImagePreview" alt="Vista previa" style="display:none;width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,.12)" />
+            <span class="muted" id="topicImageHint"></span>
+          </div>
           <div class="row">
             <button class="btn btn-primary" type="submit">Crear/Actualizar</button>
             <button class="btn btn-ghost" type="button" id="btnDeleteTopic">Eliminar</button>
@@ -48,6 +57,7 @@
 
       <section class="login-card" style="margin-top:18px">
         <h2>Video del tema</h2>
+        <div id="videoInfo" class="muted" style="margin:6px 0 2px"></div>
         <form id="videoForm" style="display:grid; gap:10px">
           <div class="row" style="gap:10px; flex-wrap:wrap">
             <label>Slug <input type="text" name="slug" required /></label>
@@ -70,8 +80,10 @@
             <label>Fuente <input type="text" name="source" /></label>
             <label>Resumen <input type="text" name="summary" /></label>
       </div>
+          <input type="hidden" name="editingId" />
           <button class="btn btn-primary" type="submit">Agregar noticia</button>
           </form>
+        <div id="newsItems" style="margin-top:8px"></div>
       </section>
 
       <section class="login-card" style="margin-top:18px">
@@ -86,8 +98,10 @@
             <label>Proveedor <input type="text" name="provider" /></label>
             <label>Resumen <input type="text" name="summary" /></label>
       </div>
+          <input type="hidden" name="editingId" />
           <button class="btn btn-primary" type="submit">Agregar curso</button>
         </form>
+        <div id="courseItems" style="margin-top:8px"></div>
       </section>
 
       <section class="login-card" id="usersSection" style="margin-top:18px; display:none">
@@ -105,6 +119,210 @@
         const allowedRoles = ['owner','admin','theme_editor','news_editor','course_editor'];
         if (!allowedRoles.includes(me.role)){ msg.textContent = 'No tienes permisos para administrar.'; return; }
         msg.textContent = 'Autorizado ('+ (me.role || 'user') +').';
+
+        // Referencias a formularios
+        const topicForm = document.getElementById('topicForm');
+        const videoForm = document.getElementById('videoForm');
+        const newsForm = document.getElementById('newsForm');
+        const courseForm = document.getElementById('courseForm');
+        const topicSection = topicForm.closest('section');
+        const videoSection = videoForm.closest('section');
+        const newsSection = newsForm.closest('section');
+        const courseSection = courseForm.closest('section');
+
+        // Capacidades por rol
+        const canManageTopics = ['owner','admin','theme_editor'].includes(me.role);
+        const canManageVideo = canManageTopics;
+        const canManageNews = ['owner','admin','news_editor','theme_editor'].includes(me.role);
+        const canManageCourses = ['owner','admin','course_editor','theme_editor'].includes(me.role);
+        const canDeleteAny = ['owner'].includes(me.role);
+
+        // Secciones y permisos
+        // Video: siempre visible para consulta; si no puede gestionar, se deja solo lectura
+        if (videoSection && videoForm){
+          if (!canManageVideo){
+            // Deshabilitar inputs y ocultar botón de guardar
+            videoForm.querySelectorAll('input,textarea,select').forEach(el => el.disabled = true);
+            const submitBtn = videoForm.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.style.display = 'none';
+          }
+          videoSection.style.display = 'block';
+        }
+        if (!canManageNews && newsSection) newsSection.style.display = 'none';
+        if (!canManageCourses && courseSection) courseSection.style.display = 'none';
+
+        // En Temas: si no puede gestionar, deshabilitar campos de edición pero mantener selector
+        if (!canManageTopics){
+          // Ocultar botones de crear/actualizar y eliminar
+          const actionRow = topicForm.querySelector('.row:nth-of-type(3)');
+          if (actionRow) actionRow.style.display = 'none';
+          // Ocultar input de imagen
+          const imgLabel = topicForm.querySelector('input[name="image"]')?.closest('label');
+          if (imgLabel) imgLabel.style.display = 'none';
+          // Deshabilitar inputs del formulario de tema
+          topicForm.querySelectorAll('input,textarea,select,button').forEach(el => el.disabled = true);
+          // Mantener habilitados selector de edición y botones de modo
+          document.getElementById('btnModeEdit').disabled = false;
+          document.getElementById('btnModeCreate').style.display = 'none';
+        }
+
+        // ----- Helpers de UI (Crear/Editar) -----
+        let currentMode = 'crear';
+        const btnModeCreate = document.getElementById('btnModeCreate');
+        const btnModeEdit = document.getElementById('btnModeEdit');
+        const selectEdit = document.getElementById('editTopicSelect');
+        const topicImagePreview = document.getElementById('topicImagePreview');
+        const topicImageHint = document.getElementById('topicImageHint');
+        const videoInfo = document.getElementById('videoInfo');
+
+        function resolveImagePath(path){
+          if (!path) return '';
+          if (path.startsWith('http://') || path.startsWith('https://')) return path;
+          return path.startsWith('/') ? path : '/' + path;
+        }
+
+        async function loadTopicOptions(){
+          const r = await fetch('/api/v2/topics');
+          const topics = await r.json();
+          selectEdit.innerHTML = '<option value="">— Selecciona un tema —</option>' + topics.map(t => `<option value="${t.slug}">${t.title} (${t.slug})</option>`).join('');
+          return topics;
+        }
+        function setMode(mode){
+          currentMode = mode;
+          if (mode === 'editar'){
+            btnModeCreate.className = 'btn btn-ghost';
+            btnModeEdit.className = 'btn btn-primary';
+            selectEdit.style.display = 'inline-block';
+            loadTopicOptions().then((topics)=>{
+              if (topics.length > 0){
+                selectEdit.value = topics[0].slug;
+                selectEdit.dispatchEvent(new Event('change'));
+              }
+            });
+          } else {
+            btnModeCreate.className = 'btn btn-primary';
+            btnModeEdit.className = 'btn btn-ghost';
+            selectEdit.style.display = 'none';
+            topicForm.reset();
+            videoForm.reset();
+            newsForm.reset();
+            courseForm.reset();
+            if (topicImagePreview){ topicImagePreview.style.display = 'none'; topicImagePreview.src=''; }
+            if (topicImageHint){ topicImageHint.textContent=''; }
+            if (videoInfo){ videoInfo.textContent=''; }
+            document.getElementById('newsItems').innerHTML='';
+            document.getElementById('courseItems').innerHTML='';
+          }
+        }
+
+        btnModeCreate.addEventListener('click', ()=> setMode('crear'));
+        btnModeEdit.addEventListener('click', ()=> setMode('editar'));
+        selectEdit.addEventListener('change', async () => {
+          const slug = selectEdit.value;
+          if (!slug) return;
+          await loadTopicDetails(slug);
+        });
+
+        async function loadTopicDetails(slug){
+          const r = await fetch('/api/v2/topics/'+encodeURIComponent(slug));
+          if (!r.ok) return;
+          const t = await r.json();
+          // Prefill topic
+          topicForm.querySelector('input[name="slug"]').value = t.slug || '';
+          topicForm.querySelector('input[name="title"]').value = t.title || '';
+          topicForm.querySelector('input[name="description"]').value = t.description || '';
+          // Image preview
+          const imgUrl = t.imageAssetId ? ('/assets/'+t.imageAssetId) : resolveImagePath(t.imagePath||'');
+          if (imgUrl){
+            topicImagePreview.src = imgUrl;
+            topicImagePreview.style.display = 'inline-block';
+            topicImageHint.textContent = 'Imagen actual (puedes subir otra para reemplazarla)';
+          } else {
+            topicImagePreview.style.display = 'none';
+            topicImageHint.textContent = 'Sin imagen asignada';
+          }
+          // Prefill video (t.videos[0] si existe)
+          const v = (t.videos && t.videos.length>0) ? t.videos[0] : null;
+          videoForm.querySelector('input[name="slug"]').value = t.slug || '';
+          videoForm.querySelector('input[name="title"]').value = v ? (v.title||'') : '';
+          videoForm.querySelector('input[name="url"]').value = v ? (v.url||'') : '';
+          videoInfo.textContent = v ? ('Video actual: '+(v.title||'Video')+' — '+(v.url||'')) : 'Sin video asignado';
+          // Render news items
+          const newsBox = document.getElementById('newsItems');
+          const canDelete = (me.role === 'owner');
+          newsBox.innerHTML = (t.news||[]).map(n => `
+            <div class="admin-item">
+              <div class="admin-item-content">
+                <strong>${n.title}</strong> — <a href="${n.url}" target="_blank" rel="noopener">${n.url}</a>
+                <div class="muted">${n.summary||''}</div>
+              </div>
+              <div class="admin-item-actions">
+                <button class="btn btn-ghost btn-small" data-news-edit="${n.id}">Editar</button>
+                ${canDelete ? `<button class="btn btn-ghost btn-small" data-news-del="${n.id}" style="color:#ff6b6b">Eliminar</button>` : ''}
+              </div>
+            </div>
+          `).join('');
+          newsBox.querySelectorAll('[data-news-edit]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.getAttribute('data-news-edit');
+              const n = (t.news||[]).find(x => x.id === id);
+              if (!n) return;
+              newsForm.querySelector('input[name="slug"]').value = t.slug;
+              newsForm.querySelector('input[name="title"]').value = n.title||'';
+              newsForm.querySelector('input[name="url"]').value = n.url||'';
+              newsForm.querySelector('input[name="source"]').value = n.source||'';
+              newsForm.querySelector('input[name="summary"]').value = n.summary||'';
+              newsForm.querySelector('input[name="editingId"]').value = id;
+              newsForm.scrollIntoView({ behavior:'smooth', block:'start' });
+            });
+          });
+          newsBox.querySelectorAll('[data-news-del]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const id = btn.getAttribute('data-news-del');
+              if (!confirm('¿Eliminar esta noticia?')) return;
+              const del = await fetch('/api/v2/news/'+id, { method:'DELETE' });
+              alert(del.ok ? 'Noticia eliminada' : 'Error eliminando noticia');
+              await loadTopicDetails(slug);
+            });
+          });
+          // Render course items
+          const courseBox = document.getElementById('courseItems');
+          courseBox.innerHTML = (t.courses||[]).map(c => `
+            <div class="admin-item">
+              <div class="admin-item-content">
+                <strong>${c.title}</strong> — <a href="${c.url}" target="_blank" rel="noopener">${c.url}</a>
+                <div class="muted">${c.summary||''}</div>
+              </div>
+              <div class="admin-item-actions">
+                <button class="btn btn-ghost btn-small" data-course-edit="${c.id}">Editar</button>
+                ${canDelete ? `<button class="btn btn-ghost btn-small" data-course-del="${c.id}" style="color:#ff6b6b">Eliminar</button>` : ''}
+              </div>
+            </div>
+          `).join('');
+          courseBox.querySelectorAll('[data-course-edit]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.getAttribute('data-course-edit');
+              const c = (t.courses||[]).find(x => x.id === id);
+              if (!c) return;
+              courseForm.querySelector('input[name="slug"]').value = t.slug;
+              courseForm.querySelector('input[name="title"]').value = c.title||'';
+              courseForm.querySelector('input[name="url"]').value = c.url||'';
+              courseForm.querySelector('input[name="provider"]').value = c.provider||'';
+              courseForm.querySelector('input[name="summary"]').value = c.summary||'';
+              courseForm.querySelector('input[name="editingId"]').value = id;
+              courseForm.scrollIntoView({ behavior:'smooth', block:'start' });
+            });
+          });
+          courseBox.querySelectorAll('[data-course-del]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const id = btn.getAttribute('data-course-del');
+              if (!confirm('¿Eliminar este curso?')) return;
+              const del = await fetch('/api/v2/courses/'+id, { method:'DELETE' });
+              alert(del.ok ? 'Curso eliminado' : 'Error eliminando curso');
+              await loadTopicDetails(slug);
+            });
+          });
+        }
 
         async function refreshTopics(){
           const list = document.getElementById('topicsList');
@@ -186,8 +404,8 @@
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) btnLogout.onclick = async ()=>{ await fetch('/api/logout',{method:'POST'}); location.reload(); };
 
-        const topicForm = document.getElementById('topicForm');
         const btnDeleteTopic = document.getElementById('btnDeleteTopic');
+        if (!canDeleteAny && btnDeleteTopic){ btnDeleteTopic.style.display = 'none'; }
         topicForm.addEventListener('submit', async (e)=>{
           e.preventDefault();
           const fd = new FormData(topicForm);
@@ -215,29 +433,49 @@
           refreshTopics();
         });
 
-        const videoForm = document.getElementById('videoForm');
         videoForm.addEventListener('submit', async (e)=>{
           e.preventDefault();
           const data = Object.fromEntries(new FormData(videoForm).entries());
           const res = await fetch('/api/v2/topics/'+encodeURIComponent(data.slug)+'/video', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url }) });
           alert(res.ok ? 'Video actualizado' : 'Error guardando video');
+          if (currentMode === 'editar' && selectEdit.value){ loadTopicDetails(selectEdit.value); }
         });
 
-        const newsForm = document.getElementById('newsForm');
         newsForm.addEventListener('submit', async (e)=>{
           e.preventDefault();
           const data = Object.fromEntries(new FormData(newsForm).entries());
-          const res = await fetch('/api/v2/topics/'+encodeURIComponent(data.slug)+'/news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url, source:data.source, summary:data.summary }) });
-          alert(res.ok ? 'Noticia agregada' : 'Error guardando noticia');
+          const editingId = data.editingId; delete data.editingId;
+          let res;
+          if (editingId){
+            res = await fetch('/api/v2/news/'+editingId, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url, source:data.source, summary:data.summary }) });
+          } else {
+            res = await fetch('/api/v2/topics/'+encodeURIComponent(data.slug)+'/news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url, source:data.source, summary:data.summary }) });
+          }
+          alert(res.ok ? (editingId ? 'Noticia actualizada' : 'Noticia agregada') : 'Error guardando noticia');
+          if (res.ok){ newsForm.querySelector('input[name="editingId"]').value=''; if (currentMode==='editar' && selectEdit.value){ loadTopicDetails(selectEdit.value); } }
         });
 
-        const courseForm = document.getElementById('courseForm');
         courseForm.addEventListener('submit', async (e)=>{
           e.preventDefault();
           const data = Object.fromEntries(new FormData(courseForm).entries());
-          const res = await fetch('/api/v2/topics/'+encodeURIComponent(data.slug)+'/courses', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url, provider:data.provider, summary:data.summary }) });
-          alert(res.ok ? 'Curso agregado' : 'Error guardando curso');
+          const editingId = data.editingId; delete data.editingId;
+          let res;
+          if (editingId){
+            res = await fetch('/api/v2/courses/'+editingId, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url, provider:data.provider, summary:data.summary }) });
+          } else {
+            res = await fetch('/api/v2/topics/'+encodeURIComponent(data.slug)+'/courses', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, url:data.url, provider:data.provider, summary:data.summary }) });
+          }
+          alert(res.ok ? (editingId ? 'Curso actualizado' : 'Curso agregado') : 'Error guardando curso');
+          if (res.ok){ courseForm.querySelector('input[name="editingId"]').value=''; if (currentMode==='editar' && selectEdit.value){ loadTopicDetails(selectEdit.value); } }
         });
+
+        // Modo por defecto según permisos
+        if (canManageTopics){
+          setMode('crear');
+        } else {
+          setMode('editar');
+          btnModeEdit.disabled = false;
+        }
       })();
     </script>
   </body>
