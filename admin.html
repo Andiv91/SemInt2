@@ -52,7 +52,6 @@
             <button class="btn btn-ghost" type="button" id="btnDeleteTopic">Eliminar</button>
       </div>
           </form>
-        <div id="topicsList" style="margin-top:12px"></div>
       </section>
 
       <section class="login-card" style="margin-top:18px">
@@ -324,45 +323,8 @@
           });
         }
 
-        async function refreshTopics(){
-          const list = document.getElementById('topicsList');
-          const res = await fetch('/api/v2/topics');
-          const topics = await res.json();
-          list.innerHTML = topics.map(t => `
-            <div class="admin-item">
-              <div class="admin-item-content">
-                <strong>${t.title}</strong><div class="muted">Slug: ${t.slug}</div>
-                <div class="muted">${t.description||''}</div>
-              </div>
-              <div class="admin-item-actions">
-                <button class="btn btn-ghost btn-small" data-edit="${t.slug}">Editar</button>
-                <button class="btn btn-ghost btn-small" data-del="${t.slug}">Eliminar</button>
-              </div>
-            </div>
-          `).join('');
-
-          list.querySelectorAll('[data-edit]').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const slug = btn.getAttribute('data-edit');
-              const r = await fetch('/api/v2/topics/'+encodeURIComponent(slug));
-              if (!r.ok) return; const t = await r.json();
-              topicForm.querySelector('input[name="slug"]').value = t.slug;
-              topicForm.querySelector('input[name="title"]').value = t.title||'';
-              topicForm.querySelector('input[name="description"]').value = t.description||'';
-              topicForm.scrollIntoView({ behavior:'smooth', block:'start' });
-            });
-          });
-          list.querySelectorAll('[data-del]').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const slug = btn.getAttribute('data-del');
-              if (!confirm('¿Eliminar tema '+slug+'?')) return;
-              const r = await fetch('/api/v2/topics/'+encodeURIComponent(slug), { method:'DELETE' });
-              if (!r.ok){ alert('Error eliminando'); return; }
-              await refreshTopics();
-            });
-          });
-        }
-        await refreshTopics();
+        // La lista de temas se gestiona únicamente desde el selector superior
+        await loadTopicOptions();
 
         // Mostrar gestión de usuarios si es owner
         if (me.role === 'owner'){
@@ -423,14 +385,19 @@
             await fetch('/api/v2/topics/'+encodeURIComponent(slug)+'/image', { method:'POST', body: imgFd });
           }
           alert('Tema guardado');
-          refreshTopics();
+          await loadTopicOptions();
+          if (currentMode === 'editar'){ selectEdit.value = slug; selectEdit.dispatchEvent(new Event('change')); }
         });
         btnDeleteTopic.addEventListener('click', async ()=>{
           const slug = topicForm.querySelector('input[name="slug"]').value; if (!slug) return;
           if (!confirm('¿Eliminar tema '+slug+'?')) return;
           const res = await fetch('/api/v2/topics/'+encodeURIComponent(slug), { method:'DELETE' });
           alert(res.ok ? 'Tema eliminado' : 'Error eliminando');
-          refreshTopics();
+          await loadTopicOptions();
+          topicForm.reset();
+          videoForm.reset();
+          newsForm.reset();
+          courseForm.reset();
         });
 
         videoForm.addEventListener('submit', async (e)=>{
