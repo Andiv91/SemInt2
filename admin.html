@@ -246,6 +246,9 @@
           videoForm.querySelector('input[name="title"]').value = v ? (v.title||'') : '';
           videoForm.querySelector('input[name="url"]').value = v ? (v.url||'') : '';
           videoInfo.textContent = v ? ('Video actual: '+(v.title||'Video')+' — '+(v.url||'')) : 'Sin video asignado';
+          // Prefill slug for create/update of news and courses
+          if (newsForm) { newsForm.querySelector('input[name="slug"]').value = t.slug || ''; newsForm.querySelector('input[name="editingId"]').value=''; }
+          if (courseForm) { courseForm.querySelector('input[name="slug"]').value = t.slug || ''; courseForm.querySelector('input[name="editingId"]').value=''; }
           // Render news items
           const newsBox = document.getElementById('newsItems');
           const canDelete = (me.role === 'owner');
